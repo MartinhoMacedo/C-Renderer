@@ -8,6 +8,10 @@ typedef struct vec4_instance_t* vec4_t;
 vec2_t vec2_create(int x, int y);
 vec3_t vec3_create(int x, int y, int z);
 vec4_t vec4_create(int x, int y, int z, int w);
+
 int vec2_get_x(vec2_t inst);
+int vec2_get_y(vec2_t inst);
+int vec3_get_z(vec3_t inst);
+int vec4_get_w(vec4_t inst);
 
 #endif // VECTOR_H_
