@@ -1,5 +1,5 @@
 build:
-	gcc -Wall -std=c99 ./src/*.c `sdl2-config --libs --cflags` -F /Library/Frameworks -lm -o renderer
+	gcc -g -Wall -std=c11 -fms-extensions ./src/*.c `sdl2-config --libs --cflags` -F /Library/Frameworks -lm -o renderer
 
 run:
 	./renderer

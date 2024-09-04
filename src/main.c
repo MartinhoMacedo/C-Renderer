@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include "display.h"
+#include "vector.h"
 
 bool is_running = false;
 
@@ -35,6 +36,13 @@ int main(void) {
         render();
     }
 
+    vec4_t a = vec4_create(1,1, 0, 0);
+    int b = vec2_get_x((vec2_t) a);
+
+    printf("%d", b);
+
     printf("Renderer exited.");
+
+    destroy_display();
     return 0;
 }

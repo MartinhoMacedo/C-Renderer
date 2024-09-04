@@ -1,4 +1,6 @@
 #include <SDL2/SDL.h>
+#include "SDL2/SDL_render.h"
+#include "SDL2/SDL_video.h"
 #include "display.h"
 
 SDL_Window* window = NULL;
@@ -24,7 +26,11 @@ bool init_window(void) {
     window_height = display_mode.h;
 
     // Create SDL Window
-    window = SDL_CreateWindow(NULL, 0, 0, window_width, window_height, SDL_WINDOW_BORDERLESS);
+    window =
+        SDL_CreateWindow(NULL, 0, 0, window_width, window_height,
+                         SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE |
+                             SDL_WINDOW_MOUSE_GRABBED | SDL_WINDOW_INPUT_FOCUS |
+                         SDL_WINDOW_MOUSE_FOCUS);
     if (!window) {
         printf("Window not created! SDL_Error: %s\n", SDL_GetError());
         return false;
@@ -43,6 +49,10 @@ bool init_window(void) {
 void setup(void) {
     framebuffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
 
+    if (!framebuffer) {
+        printf("Error allocating the framebuffer");
+    }
+
     // Creating a SDL texture that is used to display the color buffer
     framebuffer_texture = SDL_CreateTexture(
         renderer,
@@ -53,11 +63,26 @@ void setup(void) {
     );
 }
 
+void draw_pixel(int x, int y, uint32_t color) {
+    if (y < 0 || y >= window_height) {
+        printf("Draw pixel error: Invalid y: %d\n",y);
+        return;
+    }
+    if (x < 0 || x >= window_width) {
+        printf("Draw pixel error: Invalid x: %d\n",x);
+        return;
+    }
+
+    // Invert y to draw the pixel in correct position
+    y = window_height - y - 1;
+
+    framebuffer[(window_width * y) + x] = color;
+}
 
 void draw_grid(void) {
     for (int y = 0; y < window_height; y += 10) {
         for (int x = 0; x < window_width; x += 10) {
-            framebuffer[(window_width * y) + x] = 0xFF444444;
+            draw_pixel(x, y, 0xFF444444);
         }
     }
 }
@@ -67,7 +92,7 @@ void draw_rect(int x, int y, int width, int height, uint32_t color) {
         for (int j = 0; j < height; j++) {
             int current_x = x + i;
             int current_y = y + j;
-            framebuffer[(window_width * current_y) + current_x] = color;
+            draw_pixel(current_x, current_y, color);
         }
     }
 }
@@ -99,10 +124,18 @@ void render(void) {
 
     draw_grid();
 
-    //draw_rect(300, 200, 300, 150, 0xFFFF00FF);
+    draw_rect(300, 200, 300, 150, 0xFFFF00FF);
 
     render_framebuffer();
     clear_framebuffer(0xFF000000);
 
     SDL_RenderPresent(renderer);
+
+}
+
+void destroy_display(void) {
+    SDL_DestroyTexture(framebuffer_texture);
+    SDL_DestroyRenderer(renderer);
+    free(framebuffer);
+    SDL_DestroyWindow(window);
 }
