@@ -60,9 +60,9 @@
   darray_create_function(T) darray_set_function(T) darray_push_function(T)     \
   darray_get_function(T) darray_get_occupied_function(T) darray_get_capacity_function(T)
 
+#define darray_header(T) darray_object(T); darray_function_signatures(T)
 
 // SIGNATURES
-darray_object(int);
-darray_function_signatures(int);
+darray_header(int)
 
 #endif // DARRAY_H_
