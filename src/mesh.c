@@ -27,7 +27,6 @@ void mesh_load_file(mesh_t mesh, char* filename) {
 
     while (fgets(line, 100, fp)) {
 
-
         // TODO: Load values into mesh
         if (line[0] == 'v') {
             float x;

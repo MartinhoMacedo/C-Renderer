@@ -3,8 +3,6 @@
 #include <stdlib.h>
 // TEMPLATES
 
-typedef struct darray_inst_t* darray_t;
-
 #define darray_struct(T)                                                       \
   struct darray_##T##_inst_t {                                                 \
     T *first_element;                                                          \
