@@ -5,9 +5,9 @@ typedef struct vec2_instance_t* vec2_t;
 typedef struct vec3_instance_t* vec3_t;
 typedef struct vec4_instance_t* vec4_t;
 
-vec2_t vec2_create(int x, int y);
-vec3_t vec3_create(int x, int y, int z);
-vec4_t vec4_create(int x, int y, int z, int w);
+vec2_t vec2_create(float x, float y);
+vec3_t vec3_create(float x, float y, float z);
+vec4_t vec4_create(float x, float y, float z, float w);
 
 int vec2_get_x(vec2_t inst);
 int vec2_get_y(vec2_t inst);

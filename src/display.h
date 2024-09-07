@@ -12,6 +12,4 @@ void render_framebuffer(void);
 void clear_framebuffer(uint32_t color);
 void render(void);
 void destroy_display(void);
-
-
 #endif // DISPLAY_H_

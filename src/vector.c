@@ -2,21 +2,21 @@
 #include "vector.h"
 
 struct vec2_instance_t {
-    int x;
-    int y;
+    float x;
+    float y;
 };
 
 struct vec3_instance_t {
     struct vec2_instance_t;
-    int z;
+    float z;
 };
 
 struct vec4_instance_t{
     struct vec3_instance_t;
-    int w;
+    float w;
 };
 
-vec2_t vec2_create(int x, int y) {
+vec2_t vec2_create(float x, float y) {
     vec2_t inst = calloc(1, sizeof(struct vec2_instance_t));
     inst->x = x;
     inst->y = y;
@@ -24,7 +24,7 @@ vec2_t vec2_create(int x, int y) {
     return inst;
 }
 
-vec3_t vec3_create(int x, int y, int z) {
+vec3_t vec3_create(float x, float y, float z) {
     vec3_t inst = calloc(1, sizeof(struct vec3_instance_t));
     inst->x = x;
     inst->y = y;
@@ -33,7 +33,7 @@ vec3_t vec3_create(int x, int y, int z) {
     return inst;
 }
 
-vec4_t vec4_create(int x, int y, int z, int w) {
+vec4_t vec4_create(float x, float y, float z, float w) {
     vec4_t inst = calloc(1, sizeof(struct vec4_instance_t));
     inst->x = x;
     inst->y = y;

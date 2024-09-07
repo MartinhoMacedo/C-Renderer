@@ -3,14 +3,14 @@
 #include "SDL2/SDL_video.h"
 #include "display.h"
 
-SDL_Window* window = NULL;
-SDL_Renderer* renderer = NULL;
+static SDL_Window* window = NULL;
+static SDL_Renderer* renderer = NULL;
 
-uint32_t* framebuffer = NULL;
-SDL_Texture* framebuffer_texture = NULL;
+static uint32_t* framebuffer = NULL;
+static SDL_Texture* framebuffer_texture = NULL;
 
-int window_width = 1280;
-int window_height = 720;
+static int window_width = 1280;
+static int window_height = 720;
 
 
 bool init_window(void) {
