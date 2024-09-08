@@ -1,7 +1,23 @@
 #include <stdlib.h>
 #include "vector.h"
-#include "vector_private.h"
 //TODO: Mayble create & manipulate whole array of vecs here instead of a single vec
+//
+//
+
+struct vec2_instance_t {
+    float x;
+    float y;
+};
+
+struct vec3_instance_t {
+    vec2_instance_t;
+    float z;
+};
+
+struct vec4_instance_t {
+    vec3_instance_t;
+    float w;
+};
 
 vec2_t vec2_create(float x, float y) {
     vec2_t inst = calloc(1, sizeof(struct vec2_instance_t));
