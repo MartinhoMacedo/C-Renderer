@@ -10,12 +10,12 @@ struct vec2_instance_t {
 };
 
 struct vec3_instance_t {
-    vec2_instance_t;
+    struct vec2_instance_t;
     float z;
 };
 
 struct vec4_instance_t {
-    vec3_instance_t;
+    struct vec3_instance_t;
     float w;
 };
 
