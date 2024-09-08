@@ -1,6 +1,10 @@
 #ifndef VECTOR_H_
 #define VECTOR_H_
 
+typedef struct vec2_instance_t vec2_instance_t;
+typedef struct vec3_instance_t vec3_instance_t;
+typedef struct vec4_instance_t vec4_instance_t;
+
 typedef struct vec2_instance_t* vec2_t;
 typedef struct vec3_instance_t* vec3_t;
 typedef struct vec4_instance_t* vec4_t;

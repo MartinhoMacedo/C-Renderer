@@ -11,7 +11,7 @@ void tearDown(void) {
 }
 
 void test_darray(void) {
-    darray_int_t darray = darray_int_create();
+    darray_int darray = darray_int_create();
     int ints[] = {1,9,3,4,5,6,7};
 
     for (int i = 0; i < ARRAY_SIZE(ints); i++) {

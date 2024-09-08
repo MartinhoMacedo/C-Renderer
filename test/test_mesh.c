@@ -11,7 +11,8 @@ void tearDown(void) {
 }
 
 void test_load_obj(void) {
-    mesh_load_file("./assets/cube.obj");
+    mesh_t mesh = mesh_create();
+    mesh_load_file(mesh, "./assets/cube.obj");
 }
 
 // not needed when using generate_test_runner.rb
