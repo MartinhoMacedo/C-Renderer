@@ -15,7 +15,27 @@ static uint32_t* framebuffer = NULL;
 static SDL_Texture* framebuffer_texture = NULL;
 
 static int window_width = 0;
-static int window_height =0;
+static int window_height = 0;
+
+// DDA ALGO
+void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
+    int delta_x = (x1 - x0);
+    int delta_y = (y1 - y0);
+
+    int run = (abs(delta_x) >= abs(delta_y)) ? abs(delta_x) : abs(delta_y);
+
+    float inc_x =  delta_x / (float) run;
+    float inc_y =  delta_y / (float) run;
+
+    float x = x0;
+    float y = y0;
+
+    for (int i = 0; i <= run; i++) {
+        draw_pixel(round(x), round(y), color);
+        x += inc_x;
+        y += inc_y;
+    }
+}
 
 void draw_face(face_t face, darray_vec3_t vertices) {
         // Get triangle vertices indexes
@@ -63,13 +83,27 @@ void draw_face(face_t face, darray_vec3_t vertices) {
         vec2_add(c_proj, shift, c_proj);
         vec2_destroy(shift);
 
+        float a_proj_x = vec2_get_x(a_proj);
+        float a_proj_y = vec2_get_y(a_proj);
+        float b_proj_x = vec2_get_x(b_proj);
+        float b_proj_y = vec2_get_y(b_proj);
+        float c_proj_x = vec2_get_x(c_proj);
+        float c_proj_y = vec2_get_y(c_proj);
+
+        // Add lines to framebuffer
+        draw_line(a_proj_x, a_proj_y, b_proj_x, b_proj_y, 0xFF00FF00);
+        draw_line(b_proj_x, b_proj_y, c_proj_x, c_proj_y, 0xFF00FF00);
+        draw_line(c_proj_x, c_proj_y, a_proj_x, a_proj_y, 0xFF00FF00);
+
+
         // Add vertices to framebuffer
-        draw_rect(vec2_get_x(a_proj), vec2_get_y(a_proj),
-                  5, 5, 0xFFFF0000);
-        draw_rect(vec2_get_x(b_proj), vec2_get_y(b_proj),
-                  5, 5, 0xFFFF0000);
-        draw_rect(vec2_get_x(c_proj), vec2_get_y(c_proj),
-                  5, 5, 0xFFFF0000);
+        draw_rect(a_proj_x-2, a_proj_y-2,
+                  4, 4, 0xFF00FF00);
+        draw_rect(b_proj_x-2, b_proj_y-2,
+                  4, 4, 0xFF00FF00);
+        draw_rect(c_proj_x-2, c_proj_y-2,
+                  4, 4, 0xFF00FF00);
+
 
         /*printf("Drawing face %d: a: (%f, %f)\n", face,
                vec2_get_x(a_proj), vec2_get_y(a_proj));
