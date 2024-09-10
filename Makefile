@@ -14,7 +14,7 @@ test_vector: $(TEST_DIR)/test_vector.c $(TEST_DIR)/unity.c
 	./test/test_vector
 
 test_mesh: $(TEST_DIR)/test_vector.c $(TEST_DIR)/unity.c
-	$(CC) $(CFLAGS) ./src/mesh.c ./src/vector.c ./src/darray.c ./test/test_mesh.c ./test/unity.c -o ./test/test_mesh
+	$(CC) $(CFLAGS) ./src/mesh.c ./src/face.c ./src/vector.c ./src/darray.c ./test/test_mesh.c ./test/unity.c -o ./test/test_mesh
 	./test/test_mesh
 
 

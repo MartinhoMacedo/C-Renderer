@@ -2,6 +2,11 @@
 #include "SDL2/SDL_render.h"
 #include "SDL2/SDL_video.h"
 #include "display.h"
+#include "mesh.h"
+#include "face.h"
+#include "vector.h"
+
+#define CAMERA_SHIFT -5
 
 static SDL_Window* window = NULL;
 static SDL_Renderer* renderer = NULL;
@@ -9,9 +14,83 @@ static SDL_Renderer* renderer = NULL;
 static uint32_t* framebuffer = NULL;
 static SDL_Texture* framebuffer_texture = NULL;
 
-static int window_width = 1280;
-static int window_height = 720;
+static int window_width = 0;
+static int window_height =0;
 
+void draw_face(face_t face, darray_vec3_t vertices) {
+        // Get triangle vertices indexes
+        int a_idx = face_get_a(face)-1;
+        int b_idx = face_get_b(face)-1;
+        int c_idx = face_get_c(face)-1;
+
+        // Get triangles vertices coordinates
+        vec3_t a = darray_vec3_t_get(vertices, a_idx);
+        vec3_t b = darray_vec3_t_get(vertices, b_idx);
+        vec3_t c = darray_vec3_t_get(vertices, c_idx);
+
+        // JUST FOR TESTING TODO: MOVE THIS
+        // Transform mesh
+        // Scale
+        vec3_t a_transformed = vec3_create(0,0,0);
+        vec3_t b_transformed = vec3_create(0,0,0);
+        vec3_t c_transformed = vec3_create(0,0,0);
+
+        vec3_copy(a_transformed, a);
+        vec3_copy(b_transformed, b);
+        vec3_copy(c_transformed, c);
+
+        vec3_t camera_shift = vec3_create(0,0, CAMERA_SHIFT);
+        vec3_add(a_transformed, camera_shift, a_transformed);
+        vec3_add(b_transformed, camera_shift, b_transformed);
+        vec3_add(c_transformed, camera_shift, c_transformed);
+
+        // Calculate the projected 2 dimensional equivalent vertices
+        vec2_t a_proj = vec2_create(0,0);
+        vec2_t b_proj = vec2_create(0,0);
+        vec2_t c_proj = vec2_create(0,0);
+        vec3_project(a_transformed, a_proj);
+        vec3_project(b_transformed, b_proj);
+        vec3_project(c_transformed, c_proj);
+
+        vec3_destroy(a_transformed);
+        vec3_destroy(b_transformed);
+        vec3_destroy(c_transformed);
+
+        // Translate
+        vec2_t shift = vec2_create(window_width/2, window_height/2);
+        vec2_add(a_proj, shift, a_proj);
+        vec2_add(b_proj, shift, b_proj);
+        vec2_add(c_proj, shift, c_proj);
+        vec2_destroy(shift);
+
+        // Add vertices to framebuffer
+        draw_rect(vec2_get_x(a_proj), vec2_get_y(a_proj),
+                  5, 5, 0xFFFF0000);
+        draw_rect(vec2_get_x(b_proj), vec2_get_y(b_proj),
+                  5, 5, 0xFFFF0000);
+        draw_rect(vec2_get_x(c_proj), vec2_get_y(c_proj),
+                  5, 5, 0xFFFF0000);
+
+        /*printf("Drawing face %d: a: (%f, %f)\n", face,
+               vec2_get_x(a_proj), vec2_get_y(a_proj));
+        printf("Drawing face %d: b: (%f, %f)\n", face,
+               vec2_get_x(b_proj), vec2_get_y(b_proj));
+        printf("Drawing face %d: c: (%f, %f)\n", face,
+               vec2_get_x(c_proj), vec2_get_y(c_proj));*/
+}
+
+void draw_mesh(mesh_t mesh) {
+    darray_face_t faces = mesh_get_faces(mesh);
+    darray_vec3_t vertices = mesh_get_vertices(mesh);
+    int faces_size = darray_face_t_get_occupied(faces);
+
+
+    // Cicle faces
+    for (int i = 0; i < faces_size; i++) {
+        face_t face = darray_face_t_get(faces, i);
+        draw_face(face, vertices);
+    }
+}
 
 bool init_window(void) {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -124,7 +203,9 @@ void render(void) {
 
     draw_grid();
 
-    draw_rect(300, 200, 300, 150, 0xFFFF00FF);
+    //draw_rect(300, 200, 300, 150, 0xFFFF00FF);
+    mesh_t mesh = mesh_create("./assets/cube.obj");
+    draw_mesh(mesh);
 
     render_framebuffer();
     clear_framebuffer(0xFF000000);
