@@ -36,7 +36,7 @@ void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
         y += inc_y;
     }
 }
-
+//TODO: Maybe create a drawer class
 void draw_face(face_t face, darray_vec3_t vertices) {
         // Get triangle vertices indexes
         int a_idx = face_get_a(face)-1;
@@ -76,7 +76,7 @@ void draw_face(face_t face, darray_vec3_t vertices) {
         vec3_destroy(b_transformed);
         vec3_destroy(c_transformed);
 
-        // Translate
+        // Translate to the middle of the screen
         vec2_t shift = vec2_create(window_width/2, window_height/2);
         vec2_add(a_proj, shift, a_proj);
         vec2_add(b_proj, shift, b_proj);
@@ -95,7 +95,6 @@ void draw_face(face_t face, darray_vec3_t vertices) {
         draw_line(b_proj_x, b_proj_y, c_proj_x, c_proj_y, 0xFF00FF00);
         draw_line(c_proj_x, c_proj_y, a_proj_x, a_proj_y, 0xFF00FF00);
 
-
         // Add vertices to framebuffer
         draw_rect(a_proj_x-2, a_proj_y-2,
                   4, 4, 0xFF00FF00);
@@ -103,7 +102,6 @@ void draw_face(face_t face, darray_vec3_t vertices) {
                   4, 4, 0xFF00FF00);
         draw_rect(c_proj_x-2, c_proj_y-2,
                   4, 4, 0xFF00FF00);
-
 
         /*printf("Drawing face %d: a: (%f, %f)\n", face,
                vec2_get_x(a_proj), vec2_get_y(a_proj));

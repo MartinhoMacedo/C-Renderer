@@ -5,6 +5,7 @@
 #include "SDL2/SDL_render.h"
 #include "display.h"
 #include "vector.h"
+#include "macros.h"
 
 bool is_running = false;
 
@@ -28,6 +29,8 @@ void update(void) {
 }
 
 int main(void) {
+    int previous_frame_time = 0;
+
     is_running = init_window();
 
     setup();
@@ -36,6 +39,15 @@ int main(void) {
         process_input();
         update();
         render();
+
+        // Maintain constant FPS
+        int wait_time = TARGET_FRAME_TIME - (SDL_GetTicks() - previous_frame_time);
+        if (wait_time > 0 && wait_time <= TARGET_FRAME_TIME) {
+            SDL_Delay(wait_time);
+        }
+
+        previous_frame_time = SDL_GetTicks();
+
     }
 
     printf("Renderer exited.");

@@ -5,4 +5,8 @@
 
 #define FOV 1000
 
+#define FPS 30
+
+#define TARGET_FRAME_TIME (1000/FPS)
+
 #endif // MACROS_H_
