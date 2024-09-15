@@ -62,6 +62,41 @@ void vec2_set(vec2_t inst, float x, float y) {
     inst->y = y;
 }
 
+float vec2_dot(vec2_t a, vec2_t b) {
+    return a->x * b->x + a->y * b->y;
+}
+
+float vec3_dot(vec3_t a, vec3_t b) {
+    return a->x * b->x + a->y * b->y + a->z * b->z;
+}
+
+void vec3_cross(vec3_t a, vec3_t b, vec3_t res) {
+    res->x = a->y*b->z - a->z*b->y;
+    res->y = a->z*b->x - a->x*b->z;
+    res->z = a->x*b->y - a->y*b->x;
+}
+
+float vec2_magnitude(vec2_t inst) {
+    return sqrt(inst->x * inst->x + inst->y * inst->y);
+}
+
+float vec3_magnitude(vec3_t inst) {
+    return sqrt(inst->x * inst->x + inst->y * inst->y + inst->z * inst->z);
+}
+
+void vec2_normal(vec2_t inst, vec2_t res) {
+    float magnitude = vec2_magnitude(inst);
+    res->x = inst->x / magnitude;
+    res->y = inst->y / magnitude;
+}
+
+void vec3_normal(vec3_t inst, vec3_t res) {
+    float magnitude = vec3_magnitude(inst);
+    res->x = inst->x / magnitude;
+    res->y = inst->y / magnitude;
+    res->z = inst->z / magnitude;
+}
+
 void vec2_vadd(vec2_t a, vec2_t b, vec2_t res) {
     res->x = a->x + b->x;
     res->y = a->y + b->y;
@@ -82,6 +117,17 @@ void vec3_add(vec3_t a, float b_x, float b_y, float b_z, vec3_t res) {
     res->x = a->x + b_x;
     res->y = a->y + b_y;
     res->z = a->z + b_z;
+}
+
+void vec2_vsub(vec2_t a, vec2_t b, vec2_t res) {
+    res->x = a->x - b->x;
+    res->y = a->y - b->y;
+}
+
+void vec3_vsub(vec3_t a, vec3_t b, vec3_t res) {
+    res->x = a->x - b->x;
+    res->y = a->y - b->y;
+    res->z = a->z - b->z;
 }
 
 void vec3_rotate_x(vec3_t inst, float angle) {

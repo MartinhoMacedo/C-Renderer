@@ -17,10 +17,20 @@ float vec4_get_w(vec4_t inst);
 
 void vec3_project(vec3_t inst, vec2_t res);
 
+float vec2_dot(vec2_t a, vec2_t b);
+float vec3_dot(vec3_t a, vec3_t b);
+void vec3_cross(vec3_t a, vec3_t b, vec3_t res);
+float vec2_magnitude(vec2_t inst);
+float vec3_magnitude(vec3_t inst);
+void vec2_normal(vec2_t inst, vec2_t res);
+void vec3_normal(vec3_t inst, vec3_t res);
+
 void vec2_vadd(vec2_t a, vec2_t b, vec2_t res);
 void vec3_vadd(vec3_t a, vec3_t b, vec3_t res);
 void vec2_add(vec2_t a, float b_x, float b_y, vec2_t res);
 void vec3_add(vec3_t a, float b_x, float b_y, float b_z, vec3_t res);
+void vec2_vsub(vec2_t a, vec2_t b, vec2_t res);
+void vec3_vsub(vec3_t a, vec3_t b, vec3_t res);
 
 void vec3_rotate_x(vec3_t inst, float angle);
 void vec3_rotate_y(vec3_t inst, float angle);

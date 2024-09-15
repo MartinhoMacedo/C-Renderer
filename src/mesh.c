@@ -112,7 +112,51 @@ void mesh_rotate(mesh_t inst, float x, float y, float z) {
         vec3_rotate_z(vertice, z);
     }
 }
+/**
+ * Sets every face that is not seen by the camera to a not rendarizable value */
+void mesh_backface_culling(mesh_t inst, vec3_t camera) {
+    int faces_size = darray_face_t_get_occupied(inst->faces);
 
+    for (int i = 0; i < faces_size; i++) {
+        face_t face = darray_face_t_get(inst->faces, i);
+
+        int a_idx = face_get_a(face) - 1;
+        int b_idx = face_get_b(face) - 1;
+        int c_idx = face_get_c(face) - 1;
+
+        vec3_t a = darray_vec3_t_get(inst->vertices, a_idx);
+        vec3_t b = darray_vec3_t_get(inst->vertices, b_idx);
+        vec3_t c = darray_vec3_t_get(inst->vertices, c_idx);
+
+        // TODO: Change this to a function in vector "vec3_aligment" maybe
+        vec3_t ab = vec3_create(0,0,0);
+        vec3_t ac = vec3_create(0,0,0);
+        vec3_vsub(b, a, ab);
+        vec3_vsub(c, a, ac);
+
+        // normalize vectors
+
+        vec3_t cross_product = vec3_create(0,0,0);
+        vec3_cross(ab, ac,  cross_product);
+        vec3_normal(cross_product, cross_product);
+
+        // Get vector from camera to point A
+        vec3_t acamera = vec3_create(0,0,0);
+        vec3_vsub(camera, a, acamera);
+        vec3_normal(acamera, acamera);
+
+        float dot_product =  vec3_dot(cross_product, acamera);
+
+        if (dot_product <= 0) {
+            face_set(face, 0,0,0);
+        }
+
+        vec3_destroy(ab);
+        vec3_destroy(ac);
+        vec3_destroy(cross_product);
+        vec3_destroy(acamera);
+    }
+}
 
 darray_vec3_t mesh_get_vertices(mesh_t inst) {
     return inst->vertices;

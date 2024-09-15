@@ -11,11 +11,16 @@ struct face_instance_t {
 
 face_t face_create(int a, int b, int c) {
     face_t inst = malloc(sizeof(struct face_instance_t));
-    //*inst = (struct face_instance_t){a, b, c};
     inst->a = a;
     inst->b = b;
     inst->c = c;
     return inst;
+}
+
+void face_set(face_t inst, int a, int b, int c) {
+    inst->a = a;
+    inst->b = b;
+    inst->c = c;
 }
 
 void face_copy(face_t orig, face_t dest) {

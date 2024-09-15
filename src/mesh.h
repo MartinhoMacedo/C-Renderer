@@ -16,14 +16,10 @@ void mesh_copy(mesh_t orig, mesh_t dest);
 
 void mesh_transform(mesh_t inst, float translate_x, float translate_y, float translate_z,
                        float rotate_x, float rotate_y, float rotate_z);
-
-
 void mesh_translate(mesh_t inst, float x, float y, float z);
-
-
 void mesh_rotate(mesh_t inst, float x, float y, float z);
 
-void mesh_copy(mesh_t orig, mesh_t dest);
+void mesh_backface_culling(mesh_t inst, vec3_t camera);
 
 darray_vec3_t mesh_get_vertices(mesh_t inst);
 darray_face_t mesh_get_faces(mesh_t inst);

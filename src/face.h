@@ -9,6 +9,8 @@ face_t face_create(int a, int b, int c);
 
 void face_copy(face_t orig, face_t dest);
 
+void face_set(face_t inst, int a, int b, int c);
+
 int face_get_a(face_t inst) ;
 int face_get_b(face_t inst) ;
 int face_get_c(face_t inst) ;

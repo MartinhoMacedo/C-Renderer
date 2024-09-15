@@ -12,8 +12,7 @@ bool is_running = false;
 
 mesh_t mesh = NULL;
 mesh_t mesh_transformed = NULL;
-
-
+vec3_t camera_position = NULL;
 
 void process_input(void) {
     SDL_Event event;
@@ -31,9 +30,10 @@ void process_input(void) {
 }
 
 void update(void) {
+    // TODO: create mesh_transformer class
     static float translation_x = 0;
     static float translation_y = 0;
-    static float translation_z = CAMERA_SHIFT;
+    static float translation_z = -CAMERA_SHIFT;
     static float rotation_x = 0;
     static float rotation_y = 0;
     static float rotation_z = 0;
@@ -45,6 +45,8 @@ void update(void) {
                    translation_x, translation_y, translation_z,
                    rotation_x+=0.01, rotation_y+=0.01, rotation_z+=0.01);
 
+    // Apply backface culling
+    mesh_backface_culling(mesh_transformed, camera_position);
 }
 
 int main(void) {
@@ -59,6 +61,8 @@ int main(void) {
     mesh_transformed = mesh_create_clone(mesh);
 
     set_mesh(mesh_transformed);
+
+    camera_position = vec3_create(0, 0, 0);
 
     while(is_running){
         process_input();
