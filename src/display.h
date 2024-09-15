@@ -3,7 +3,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "mesh.h"
 
+void set_mesh(mesh_t mesh_a);
 bool init_window(void);
 void setup(void);
 void draw_grid(void);

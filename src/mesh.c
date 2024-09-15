@@ -5,6 +5,7 @@
 #include "face.h"
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 
 void mesh_load_file(mesh_t mesh, char* filename);
@@ -16,9 +17,102 @@ struct mesh_instance_t {
 
 mesh_t mesh_create(char* filename) {
     mesh_t inst = malloc(sizeof(struct mesh_instance_t));
-    mesh_load_file(inst, filename);
+    if(filename){ mesh_load_file(inst, filename); }
     return inst;
 }
+
+/**
+ * Creates a new mesh with deep copied values. */
+mesh_t mesh_create_clone(mesh_t orig) {
+    mesh_t inst = malloc(sizeof(struct mesh_instance_t));
+
+    int vertices_size = darray_vec3_t_get_occupied(orig->vertices);
+    int faces_size = darray_face_t_get_occupied(orig->faces);
+
+    inst->vertices = darray_vec3_t_create();
+    inst->faces = darray_face_t_create();
+
+    for (int i = 0; i < vertices_size; i++) {
+        vec3_t orig_vertex = darray_vec3_t_get(orig->vertices, i);
+        vec3_t dest_vertex = vec3_create(0, 0, 0);
+        vec3_copy(orig_vertex, dest_vertex);
+        darray_vec3_t_push(inst->vertices, dest_vertex);
+    }
+
+    for (int i = 0; i < faces_size; i++) {
+       face_t orig_face = darray_face_t_get(orig->faces, i);
+       face_t dest_face = face_create(0, 0, 0);
+       face_copy(orig_face, dest_face);
+       darray_face_t_push(inst->faces, dest_face);
+    }
+
+    return inst;
+}
+
+/**
+ * Deep copies the origins array values to the destination.
+ * The destination should have allocated arrays of the same size as the origin. */
+void mesh_copy(mesh_t orig, mesh_t dest) {
+    int vertices_size = darray_vec3_t_get_occupied(orig->vertices);
+    int faces_size = darray_face_t_get_occupied(orig->faces);
+
+    for (int i = 0; i < vertices_size; i++) {
+        vec3_t orig_vertex = darray_vec3_t_get(orig->vertices, i);
+        vec3_t dest_vertex = darray_vec3_t_get(dest->vertices, i);
+        vec3_copy(orig_vertex, dest_vertex);
+    }
+
+   for (int i = 0; i < faces_size; i++) {
+       face_t orig_face = darray_face_t_get(orig->faces, i);
+       face_t dest_face = darray_face_t_get(dest->faces, i);
+       face_copy(orig_face, dest_face);
+    }
+}
+
+
+void mesh_transform(mesh_t inst, float translate_x, float translate_y, float translate_z,
+                       float rotate_x, float rotate_y, float rotate_z) {
+    int vertices_size = darray_vec3_t_get_occupied(inst->vertices);
+
+    // apply transformation to all vertices
+    for (int i = 0; i < vertices_size; i++) {
+        vec3_t vertice = darray_vec3_t_get(inst->vertices, i);
+
+        // rotation
+        vec3_rotate_x(vertice, rotate_x);
+        vec3_rotate_y(vertice, rotate_y);
+        vec3_rotate_z(vertice, rotate_z);
+
+        // translation
+        vec3_add(vertice, translate_x, translate_y, translate_z, vertice);
+    }
+}
+
+void mesh_translate(mesh_t inst, float x, float y, float z) {
+    int vertices_size = darray_vec3_t_get_occupied(inst->vertices);
+
+    // apply transformation to all vertices
+    for (int i = 0; i < vertices_size; i++) {
+        vec3_t vertice = darray_vec3_t_get(inst->vertices, i);
+
+        // translation
+        vec3_add(vertice, x, y, z, vertice);
+    }
+}
+
+void mesh_rotate(mesh_t inst, float x, float y, float z) {
+    int vertices_size = darray_vec3_t_get_occupied(inst->vertices);
+
+    for (int i = 0; i < vertices_size; i++) {
+        vec3_t vertice = darray_vec3_t_get(inst->vertices, i);
+
+        // rotation
+        vec3_rotate_x(vertice, x);
+        vec3_rotate_y(vertice, y);
+        vec3_rotate_z(vertice, z);
+    }
+}
+
 
 darray_vec3_t mesh_get_vertices(mesh_t inst) {
     return inst->vertices;

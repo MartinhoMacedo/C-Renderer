@@ -9,4 +9,6 @@
 
 #define TARGET_FRAME_TIME (1000/FPS)
 
+#define CAMERA_SHIFT -5
+
 #endif // MACROS_H_

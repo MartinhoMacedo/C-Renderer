@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include "vector.h"
 #include "macros.h"
+#include <stdio.h>
+#include <math.h>
 
 darray_definition(vec3_t);
 
@@ -55,18 +57,69 @@ void vec3_project(vec3_t inst, vec2_t res) {
     res->y = -FOV*inst->y/inst->z;
 }
 
-void vec2_add(vec2_t a, vec2_t b, vec2_t res) {
+void vec2_set(vec2_t inst, float x, float y) {
+    inst->x = x;
+    inst->y = y;
+}
+
+void vec2_vadd(vec2_t a, vec2_t b, vec2_t res) {
     res->x = a->x + b->x;
     res->y = a->y + b->y;
 }
 
-void vec3_add(vec3_t a, vec3_t b, vec3_t res) {
+void vec3_vadd(vec3_t a, vec3_t b, vec3_t res) {
     res->x = a->x + b->x;
     res->y = a->y + b->y;
     res->z = a->z + b->z;
 }
 
-void vec3_copy(vec3_t dst, vec3_t src) {
+void vec2_add(vec2_t a, float b_x, float b_y, vec2_t res) {
+    res->x = a->x + b_x;
+    res->y = a->y + b_y;
+}
+
+void vec3_add(vec3_t a, float b_x, float b_y, float b_z, vec3_t res) {
+    res->x = a->x + b_x;
+    res->y = a->y + b_y;
+    res->z = a->z + b_z;
+}
+
+void vec3_rotate_x(vec3_t inst, float angle) {
+    struct vec3_instance_t rotated = {
+      .x = inst->x,
+      .y = inst->y * cos(angle) - inst->z * sin(angle),
+      .z = inst->y * sin(angle) + inst->z * cos(angle)
+    };
+    *inst = rotated;
+}
+
+void vec3_rotate_y(vec3_t inst, float angle) {
+    struct vec3_instance_t rotated = {
+      .x = inst->x * cos(angle) - inst->z * sin(angle),
+      .y = inst->y,
+      .z = inst->x * sin(angle) + inst->z * cos(angle)
+    };
+    *inst = rotated;
+}
+
+void vec3_rotate_z(vec3_t inst, float angle) {
+    struct vec3_instance_t rotated = {
+      .x = inst->x * cos(angle) + inst->y * sin(angle),
+      .y = -inst->x * sin(angle) + inst->y * cos(angle),
+      .z = inst->z
+    };
+    *inst = rotated;
+}
+
+void vec2_to_string(vec2_t inst, char string[]) {
+    snprintf(string, 50, "(%f, %f)", inst->x, inst->y);
+}
+
+void vec3_to_string(vec3_t inst, char string[]) {
+    snprintf(string, 50, "(%f, %f, %f)", inst->x, inst->y, inst->z);
+}
+
+void vec3_copy(vec3_t src, vec3_t dst) {
     dst->x = src->x;
     dst->y = src->y;
     dst->z = src->z;

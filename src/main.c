@@ -4,10 +4,16 @@
 #include <SDL2/SDL.h>
 #include "SDL2/SDL_render.h"
 #include "display.h"
+#include "mesh.h"
 #include "vector.h"
 #include "macros.h"
 
 bool is_running = false;
+
+mesh_t mesh = NULL;
+mesh_t mesh_transformed = NULL;
+
+
 
 void process_input(void) {
     SDL_Event event;
@@ -25,7 +31,20 @@ void process_input(void) {
 }
 
 void update(void) {
-    // TODO:
+    static float translation_x = 0;
+    static float translation_y = 0;
+    static float translation_z = CAMERA_SHIFT;
+    static float rotation_x = 0;
+    static float rotation_y = 0;
+    static float rotation_z = 0;
+
+    // reset transformed mesh to origin (mesh space)
+    mesh_copy(mesh, mesh_transformed);
+    // Apply transformations
+    mesh_transform(mesh_transformed,
+                   translation_x, translation_y, translation_z,
+                   rotation_x+=0.01, rotation_y+=0.01, rotation_z+=0.01);
+
 }
 
 int main(void) {
@@ -34,6 +53,12 @@ int main(void) {
     is_running = init_window();
 
     setup();
+
+    mesh = mesh_create("./assets/cube.obj");
+    // TODO: change to mesh_create_clone(mesh)
+    mesh_transformed = mesh_create_clone(mesh);
+
+    set_mesh(mesh_transformed);
 
     while(is_running){
         process_input();
@@ -53,5 +78,7 @@ int main(void) {
     printf("Renderer exited.");
 
     destroy_display();
+    mesh_destroy(mesh);
+    mesh_destroy(mesh_transformed);
     return 0;
 }

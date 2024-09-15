@@ -18,6 +18,12 @@ face_t face_create(int a, int b, int c) {
     return inst;
 }
 
+void face_copy(face_t orig, face_t dest) {
+    dest->a = orig->a;
+    dest->b = orig->b;
+    dest->c = orig->c;
+}
+
 int face_get_a(face_t inst) {
     return inst->a;
 }
