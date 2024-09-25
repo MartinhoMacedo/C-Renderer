@@ -18,6 +18,39 @@ static int window_height = 0;
 
 static mesh_t mesh = NULL;
 
+static bool lines_on = true;
+static bool vertices_on = true;
+static bool fill_on = true;
+
+void switch_wireframe() {
+    lines_on = !lines_on;
+    vertices_on = !vertices_on;
+}
+
+void switch_fill() {
+    fill_on = !fill_on;
+}
+
+void set_render_mode(int mode) {
+    switch (mode) {
+        case 1:
+            lines_on = true;
+            vertices_on = true;
+            fill_on = false;
+            break;
+        case 2:
+            lines_on = true;
+            vertices_on = true;
+            fill_on = true;
+            break;
+        case 3:
+            lines_on = false;
+            vertices_on = false;
+            fill_on = true;
+            break;
+    }
+}
+
 void set_mesh(mesh_t mesh_a) {
     mesh = mesh_a;
 }
@@ -280,9 +313,15 @@ void draw_face(face_t face, darray_vec3_t vertices) {
     vec2_add(b_proj, window_width/2,window_height/2, b_proj);
     vec2_add(c_proj, window_width/2, window_height/2, c_proj);
 
-    draw_filled_triangle(a_proj, b_proj, c_proj, 0xFF0000FF);
-    draw_triangle_lines(a_proj, b_proj, c_proj, 0xFF00FF00);
-    draw_triangle_vertices(a_proj, b_proj, c_proj, 0xFF00FF00);
+    if(fill_on){
+        draw_filled_triangle(a_proj, b_proj, c_proj, 0xFF0000FF);
+    }
+    if (lines_on) {
+        draw_triangle_lines(a_proj, b_proj, c_proj, 0xFF00FF00);
+    }
+    if (vertices_on) {
+        draw_triangle_vertices(a_proj, b_proj, c_proj, 0xFF00FF00);
+    }
 
     vec2_destroy(a_proj);
     vec2_destroy(b_proj);

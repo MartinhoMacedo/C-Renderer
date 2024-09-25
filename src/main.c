@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
+#include "SDL2/SDL_keycode.h"
 #include "SDL2/SDL_render.h"
 #include "display.h"
 #include "mesh.h"
@@ -14,6 +15,12 @@ bool is_paused = false;
 mesh_t mesh = NULL;
 mesh_t mesh_transformed = NULL;
 vec3_t camera_position = NULL;
+
+bool backface_on = true;
+
+void switch_backface() {
+    backface_on = !backface_on;
+}
 
 void process_input(void) {
     SDL_Event event;
@@ -28,6 +35,14 @@ void process_input(void) {
                 is_running = false;
             if (event.key.keysym.sym == SDLK_SPACE)
                 is_paused = !is_paused;
+            if (event.key.keysym.sym == SDLK_b)
+                switch_backface();
+            if (event.key.keysym.sym == SDLK_1)
+                set_render_mode(1);
+            if (event.key.keysym.sym == SDLK_2)
+                set_render_mode(2);
+            if (event.key.keysym.sym == SDLK_3)
+                set_render_mode(3);
             break;
     }
 }
@@ -50,7 +65,9 @@ void update(void) {
                    rotation_x+=0.01, rotation_y+=0.01, rotation_z+=0.01);
 
     // Apply backface culling
-    mesh_backface_culling(mesh_transformed, camera_position);
+    if (backface_on) {
+        mesh_backface_culling(mesh_transformed, camera_position);
+    }
 }
 
 int main(void) {

@@ -9,6 +9,8 @@ void set_mesh(mesh_t mesh_a);
 bool init_window(void);
 void setup(void);
 
+void set_render_mode(int mode);
+
 void render_framebuffer(void);
 void clear_framebuffer(uint32_t color);
 void render(void);
