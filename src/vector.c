@@ -165,6 +165,11 @@ void vec3_to_string(vec3_t inst, char string[]) {
     snprintf(string, 50, "(%f, %f, %f)", inst->x, inst->y, inst->z);
 }
 
+void vec2_copy(vec2_t src, vec2_t dst) {
+    dst->x = src->x;
+    dst->y = src->y;
+}
+
 void vec3_copy(vec3_t src, vec3_t dst) {
     dst->x = src->x;
     dst->y = src->y;

@@ -8,9 +8,7 @@
 void set_mesh(mesh_t mesh_a);
 bool init_window(void);
 void setup(void);
-void draw_grid(void);
-void draw_rect(int x, int y, int width, int height, uint32_t color);
-void draw_pixel(int x, int y, uint32_t color);
+
 void render_framebuffer(void);
 void clear_framebuffer(uint32_t color);
 void render(void);

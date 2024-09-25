@@ -36,6 +36,7 @@ void vec3_rotate_x(vec3_t inst, float angle);
 void vec3_rotate_y(vec3_t inst, float angle);
 void vec3_rotate_z(vec3_t inst, float angle);
 
+void vec2_copy(vec2_t src, vec2_t dst);
 void vec3_copy(vec3_t src, vec3_t dst);
 
 void vec2_to_string(vec2_t inst, char string[]);

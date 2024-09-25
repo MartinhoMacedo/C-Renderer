@@ -9,6 +9,7 @@
 #include "macros.h"
 
 bool is_running = false;
+bool is_paused = false;
 
 mesh_t mesh = NULL;
 mesh_t mesh_transformed = NULL;
@@ -25,6 +26,8 @@ void process_input(void) {
         case SDL_KEYDOWN:
             if (event.key.keysym.sym == SDLK_ESCAPE)
                 is_running = false;
+            if (event.key.keysym.sym == SDLK_SPACE)
+                is_paused = !is_paused;
             break;
     }
 }
@@ -41,8 +44,9 @@ void update(void) {
     // reset transformed mesh to origin (mesh space)
     mesh_copy(mesh, mesh_transformed);
     // Apply transformations
+    // NOTE: Here the x and y coordinates are inverted because this transformation is before projection
     mesh_transform(mesh_transformed,
-                   translation_x, translation_y, translation_z,
+                   translation_x-=0.00, translation_y+=0.00, translation_z,
                    rotation_x+=0.01, rotation_y+=0.01, rotation_z+=0.01);
 
     // Apply backface culling
@@ -66,17 +70,17 @@ int main(void) {
 
     while(is_running){
         process_input();
-        update();
-        render();
+        if(!is_paused && is_running){
+            update();
+            render();
+            // Maintain constant FPS
+            int wait_time = TARGET_FRAME_TIME - (SDL_GetTicks() - previous_frame_time);
+            if (wait_time > 0 && wait_time <= TARGET_FRAME_TIME) {
+                SDL_Delay(wait_time);
+            }
 
-        // Maintain constant FPS
-        int wait_time = TARGET_FRAME_TIME - (SDL_GetTicks() - previous_frame_time);
-        if (wait_time > 0 && wait_time <= TARGET_FRAME_TIME) {
-            SDL_Delay(wait_time);
+            previous_frame_time = SDL_GetTicks();
         }
-
-        previous_frame_time = SDL_GetTicks();
-
     }
 
     printf("Renderer exited.");
