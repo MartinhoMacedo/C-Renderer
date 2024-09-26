@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "vector.h"
+#include "matrix.h"
 #include "macros.h"
 #include <stdio.h>
 #include <math.h>
@@ -70,6 +71,10 @@ float vec3_dot(vec3_t a, vec3_t b) {
     return a->x * b->x + a->y * b->y + a->z * b->z;
 }
 
+float vec4_dot(vec4_t a, vec4_t b) {
+    return a->x * b->x + a->y * b->y + a->z * b->z + a->w * b->w;
+}
+
 void vec3_cross(vec3_t a, vec3_t b, vec3_t res) {
     res->x = a->y*b->z - a->z*b->y;
     res->y = a->z*b->x - a->x*b->z;
@@ -130,6 +135,32 @@ void vec3_vsub(vec3_t a, vec3_t b, vec3_t res) {
     res->z = a->z - b->z;
 }
 
+// res = mat * vec
+void vec4_mul_mat4(mat4_t m, vec4_t v, vec4_t res) {
+    struct vec4_instance_t l0 = {.x = mat4_get_element(m, 0, 0),
+                                 .y = mat4_get_element(m, 0, 1),
+                                 .z = mat4_get_element(m, 0, 2),
+                                 .w = mat4_get_element(m, 0, 3)};
+    struct vec4_instance_t l1 = {.x = mat4_get_element(m, 1, 0),
+                                 .y = mat4_get_element(m, 1, 1),
+                                 .z = mat4_get_element(m, 1, 2),
+                                 .w = mat4_get_element(m, 1, 3)};
+    struct vec4_instance_t l2 = {.x = mat4_get_element(m, 2, 0),
+                                 .y = mat4_get_element(m, 2, 1),
+                                 .z = mat4_get_element(m, 2, 2),
+                                 .w = mat4_get_element(m, 2, 3)};
+    struct vec4_instance_t l3 = {.x = mat4_get_element(m, 3, 0),
+                                 .y = mat4_get_element(m, 3, 1),
+                                 .z = mat4_get_element(m, 3, 2),
+                                 .w = mat4_get_element(m, 3, 3)};
+
+    struct vec4_instance_t res_tmp = {.x = vec4_dot(v, &l0),
+                                      .y = vec4_dot(v, &l1),
+                                      .z = vec4_dot(v, &l2),
+                                      .w = vec4_dot(v, &l3)};
+   *res = res_tmp;
+}
+
 void vec3_rotate_x(vec3_t inst, float angle) {
     struct vec3_instance_t rotated = {
       .x = inst->x,
@@ -177,6 +208,22 @@ void vec3_copy(vec3_t src, vec3_t dst) {
 }
 
 // Can be used for ex with a vec3 by typecasting it to a vec2: vec2_get_x((vec2_t) vec3)
+void vec2_set_x(vec2_t inst, float x) {
+    inst->x = x;
+}
+
+void vec2_set_y(vec2_t inst, float y) {
+    inst->y = y;
+}
+
+void vec3_set_z(vec3_t inst, float z) {
+    inst->z = z;
+}
+
+void vec4_set_w(vec4_t inst, float w) {
+    inst->w = w;
+}
+
 float vec2_get_x(vec2_t inst) {
     return inst->x;
 }

@@ -22,5 +22,9 @@ test_darray: $(TEST_DIR)/test_darray.c $(TEST_DIR)/unity.c
 	$(CC) -g $(CFLAGS) ./src/darray.c ./test/test_darray.c ./test/unity.c -o ./test/test_darray
 	./test/test_darray
 
+test_matrix: $(TEST_DIR)/test_matrix.c $(TEST_DIR)/unity.c
+	$(CC) -g $(CFLAGS) ./src/matrix.c ./src/vector.c ./test/test_matrix.c ./test/unity.c -o ./test/test_matrix
+	./test/test_matrix
+
 clean:
 	rm renderer

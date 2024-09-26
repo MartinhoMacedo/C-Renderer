@@ -1,6 +1,7 @@
 #ifndef VECTOR_H_
 #define VECTOR_H_
 #include "darray.h"
+#include "matrix.h"
 
 typedef struct vec2_instance_t* vec2_t;
 typedef struct vec3_instance_t* vec3_t;
@@ -10,6 +11,10 @@ vec2_t vec2_create(float x, float y);
 vec3_t vec3_create(float x, float y, float z);
 vec4_t vec4_create(float x, float y, float z, float w);
 
+void vec2_set_x(vec2_t inst, float x);
+void vec2_set_y(vec2_t inst, float y);
+void vec3_set_z(vec3_t inst, float z);
+void vec4_set_w(vec4_t inst, float w);
 float vec2_get_x(vec2_t inst);
 float vec2_get_y(vec2_t inst);
 float vec3_get_z(vec3_t inst);
@@ -31,6 +36,8 @@ void vec2_add(vec2_t a, float b_x, float b_y, vec2_t res);
 void vec3_add(vec3_t a, float b_x, float b_y, float b_z, vec3_t res);
 void vec2_vsub(vec2_t a, vec2_t b, vec2_t res);
 void vec3_vsub(vec3_t a, vec3_t b, vec3_t res);
+
+void vec4_mul_mat4(mat4_t m, vec4_t v, vec4_t res);
 
 void vec3_rotate_x(vec3_t inst, float angle);
 void vec3_rotate_y(vec3_t inst, float angle);
