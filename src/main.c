@@ -49,20 +49,26 @@ void process_input(void) {
 
 void update(void) {
     // TODO: create mesh_transformer class
+    //
     static float translation_x = 0;
     static float translation_y = 0;
     static float translation_z = -CAMERA_SHIFT;
     static float rotation_x = 0;
     static float rotation_y = 0;
     static float rotation_z = 0;
+    static float scale_x = 1;
+    static float scale_y = 1;
+    static float scale_z = 1;
+
 
     // reset transformed mesh to origin (mesh space)
     mesh_copy(mesh, mesh_transformed);
     // Apply transformations
     // NOTE: Here the x and y coordinates are inverted because this transformation is before projection
-    mesh_transform(mesh_transformed,
-                   translation_x-=0.00, translation_y+=0.00, translation_z,
-                   rotation_x+=0.01, rotation_y+=0.01, rotation_z+=0.01);
+    mesh_transform(mesh_transformed, translation_x += 0.00,
+                   translation_y += 0.01, translation_z, rotation_x += 0.01,
+                   rotation_y += 0.00, rotation_z += 0.00,
+                   scale_x+=0.000, scale_y+=0.000, scale_z+=0.000);
 
     // Apply backface culling
     if (backface_on) {
@@ -77,7 +83,7 @@ int main(void) {
 
     setup();
 
-    mesh = mesh_create("./assets/cube.obj");
+    mesh = mesh_create("./assets/f22.obj");
     // TODO: change to mesh_create_clone(mesh)
     mesh_transformed = mesh_create_clone(mesh);
 

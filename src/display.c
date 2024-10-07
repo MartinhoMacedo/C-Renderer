@@ -15,6 +15,7 @@ static SDL_Texture* framebuffer_texture = NULL;
 
 static int window_width = 0;
 static int window_height = 0;
+static float aspect_ratio = 0;
 
 static mesh_t mesh = NULL;
 
@@ -66,6 +67,7 @@ bool init_window(void) {
     SDL_GetCurrentDisplayMode(0, &display_mode);
     window_width = display_mode.w;
     window_height = display_mode.h;
+    aspect_ratio = (float)window_height/ window_width;
 
     // Create SDL Window
     window =
@@ -304,9 +306,24 @@ void draw_face(face_t face, darray_vec3_t vertices) {
     vec2_t a_proj = vec2_create(0,0);
     vec2_t b_proj = vec2_create(0,0);
     vec2_t c_proj = vec2_create(0,0);
-    vec3_project(a, a_proj);
-    vec3_project(b, b_proj);
-    vec3_project(c, c_proj);
+    vec3_project(a, M_PI/2, 10, 1,a_proj);
+    vec3_project(b, M_PI/2, 10, 1, b_proj);
+    vec3_project(c, M_PI/2, 10, 1, c_proj);
+
+    // Convert from NDC to display space
+
+    // Sccale to screen size
+    vec2_scale(a_proj,
+               ((float)window_width / 2) * aspect_ratio,
+               (float)window_height / 2,
+               a_proj);
+    vec2_scale(b_proj,
+               (float)window_width / 2 * aspect_ratio,
+               (float)window_height / 2,
+               b_proj);
+    vec2_scale(c_proj, (float)window_width / 2 * aspect_ratio,
+               (float)window_height / 2,
+               c_proj);
 
     // Translate to the middle of the screen
     vec2_add(a_proj, window_width/2, window_height/2, a_proj);

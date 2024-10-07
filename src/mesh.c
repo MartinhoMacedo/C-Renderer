@@ -3,6 +3,7 @@
 #include "macros.h"
 #include "vector.h"
 #include "face.h"
+#include "matrix.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -70,14 +71,32 @@ void mesh_copy(mesh_t orig, mesh_t dest) {
 }
 
 
-void mesh_transform(mesh_t inst, float translate_x, float translate_y, float translate_z,
-                       float rotate_x, float rotate_y, float rotate_z) {
+void mesh_transform(mesh_t inst, float translate_x, float translate_y,
+                    float translate_z, float rotate_x, float rotate_y,
+                    float rotate_z,
+                    float scale_x, float scale_y, float scale_z) {
     int vertices_size = darray_vec3_t_get_occupied(inst->vertices);
 
     // apply transformation to all vertices
     for (int i = 0; i < vertices_size; i++) {
-        vec3_t vertice = darray_vec3_t_get(inst->vertices, i);
+        char tmp_vertice_buffer[vec4_struct_get_size()];
 
+        vec3_t vertice = darray_vec3_t_get(inst->vertices, i);
+        vec4_t tmp_vertice = vec4_init(tmp_vertice_buffer,
+                                       vec2_get_x((vec2_t) vertice),
+                                       vec2_get_y((vec2_t) vertice),
+                                       vec3_get_z(vertice),
+                                        1);
+
+        mat4_t world = mat4_create_world(scale_x, scale_y, scale_z, rotate_x,
+                                         rotate_y, rotate_z,
+                                         translate_x,
+                                         translate_y, translate_z);
+        vec4_mul_mat4(world, tmp_vertice, tmp_vertice);
+
+        vec3_copy((vec3_t) tmp_vertice, vertice);
+
+        /*
         // rotation
         vec3_rotate_x(vertice, rotate_x);
         vec3_rotate_y(vertice, rotate_y);
@@ -85,6 +104,7 @@ void mesh_transform(mesh_t inst, float translate_x, float translate_y, float tra
 
         // translation
         vec3_add(vertice, translate_x, translate_y, translate_z, vertice);
+        */
     }
 }
 
