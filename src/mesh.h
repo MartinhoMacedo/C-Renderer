@@ -18,6 +18,7 @@ void mesh_transform(mesh_t inst, float translate_x, float translate_y,
                     float translate_z, float rotate_x, float rotate_y,
                     float rotate_z,
                     float scale_x, float scale_y, float scale_z);
+void mesh_to_camera_space(mesh_t inst, mat4_t camera);
 
 
 void mesh_translate(mesh_t inst, float x, float y, float z);

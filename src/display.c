@@ -274,12 +274,16 @@ void draw_filled_triangle(vec2_t a, vec2_t b, vec2_t c, uint32_t color) {
     float M_x = ((c_x - a_x) * (b_y - a_y)) / (c_y - a_y) + a_x;
 
     // NOTE: This kind of allocation is expensive
-    vec2_t M = vec2_create(M_x, M_y);
+    //vec2_t M = vec2_create(M_x, M_y);
+    char M_buffer[vec2_struct_get_size()];
+
+    vec2_t M = vec2_init(&M_buffer, M_x, M_y);
+
 
     fill_flat_bottom_triangle(a, b, M, color);
     fill_flat_top_triangle(b, M, c, color);
 
-    vec2_destroy(M);
+    //vec2_destroy(M);
 }
 
 //TODO: Maybe create a drawer class
@@ -303,9 +307,18 @@ void draw_face(face_t face, darray_vec3_t vertices) {
 
     //NOTE: Allocating and destroying this temp vectors everytime is extremely inefficient.
     //TODO: Maybe create a pool allocator memory management system.
-    vec2_t a_proj = vec2_create(0,0);
+    /*vec2_t a_proj = vec2_create(0,0);
     vec2_t b_proj = vec2_create(0,0);
     vec2_t c_proj = vec2_create(0,0);
+    */
+    char a_proj_buffer[vec2_struct_get_size()];
+    char b_proj_buffer[vec2_struct_get_size()];
+    char c_proj_buffer[vec2_struct_get_size()];
+
+    vec2_t a_proj = (vec2_t) a_proj_buffer;
+    vec2_t b_proj = (vec2_t) b_proj_buffer;
+    vec2_t c_proj = (vec2_t) c_proj_buffer;
+
     vec3_project(a, M_PI/2, 10, 1,a_proj);
     vec3_project(b, M_PI/2, 10, 1, b_proj);
     vec3_project(c, M_PI/2, 10, 1, c_proj);
@@ -340,10 +353,10 @@ void draw_face(face_t face, darray_vec3_t vertices) {
         draw_triangle_vertices(a_proj, b_proj, c_proj, 0xFF00FF00);
     }
 
-    vec2_destroy(a_proj);
+    /*vec2_destroy(a_proj);
     vec2_destroy(b_proj);
     vec2_destroy(c_proj);
-
+    */
     /*printf("Drawing face %d: a: (%f, %f)\n", face,
             vec2_get_x(a_proj), vec2_get_y(a_proj));
     printf("Drawing face %d: b: (%f, %f)\n", face,

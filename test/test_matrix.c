@@ -21,6 +21,7 @@ void test_null_matrix(void) {
             TEST_ASSERT_EQUAL(el, 0);
         }
     }
+    mat4_destroy(m_null);
 }
 
 void test_identity_matrix(void) {
@@ -34,6 +35,7 @@ void test_identity_matrix(void) {
         }
         //printf("\n");
     }
+    mat4_destroy(m_identity);
 }
 
 void test_scale_matrix(void) {
@@ -50,6 +52,7 @@ void test_scale_matrix(void) {
         }
         //printf("\n");
     }
+    mat4_destroy(m_scale);
 }
 
 void test_translation_matrix(void) {
@@ -73,6 +76,8 @@ void test_translation_matrix(void) {
     printf("v = (%f, %f, %f, %f)\n", vec2_get_x((vec2_t)v), vec2_get_y((vec2_t)v),
            vec3_get_z((vec3_t) v), vec4_get_w(v));
 
+    mat4_destroy(m);
+    vec4_destroy(v);
 }
 
 void test_rotation_matrix_x(void) {
@@ -98,6 +103,8 @@ void test_rotation_matrix_x(void) {
     printf("v = (%f, %f, %f, %f)\n", vec2_get_x((vec2_t)v), vec2_get_y((vec2_t)v),
            vec3_get_z((vec3_t) v), vec4_get_w(v));
 
+    vec4_destroy(v);
+    mat4_destroy(m);
 }
 
 void test_rotation_matrix_y(void) {
@@ -122,6 +129,9 @@ void test_rotation_matrix_y(void) {
     printf("v = (%f, %f, %f, %f)\n", vec2_get_x((vec2_t)v), vec2_get_y((vec2_t)v),
            vec3_get_z((vec3_t) v), vec4_get_w(v));
 
+
+    vec4_destroy(v);
+    mat4_destroy(m);
 }
 
 void test_rotation_matrix_z(void) {
@@ -146,6 +156,8 @@ void test_rotation_matrix_z(void) {
     printf("v = (%f, %f, %f, %f)\n", vec2_get_x((vec2_t)v), vec2_get_y((vec2_t)v),
            vec3_get_z((vec3_t) v), vec4_get_w(v));
 
+    vec4_destroy(v);
+    mat4_destroy(m);
 }
 
 void test_matrix_multiplication(void) {
@@ -196,6 +208,8 @@ void test_matrix_multiplication(void) {
     TEST_ASSERT_EQUAL(mat4_get_element(a, 3, 2), 444);
     TEST_ASSERT_EQUAL(mat4_get_element(a, 3, 3), 386);
 
+    mat4_destroy(a);
+    mat4_destroy(b);
 }
 
 void test_world_matrix(void) {
@@ -230,6 +244,14 @@ void test_world_matrix(void) {
     TEST_ASSERT_EQUAL_FLOAT(vec2_get_x((vec2_t)v), vec2_get_y((vec2_t)v));
     TEST_ASSERT_EQUAL_FLOAT(2, vec3_get_z((vec3_t)v));
 
+
+    vec4_destroy(v);
+    mat4_destroy(scale);
+    mat4_destroy(rotation_x);
+    mat4_destroy(rotation_y);
+    mat4_destroy(rotation_z);
+    mat4_destroy(translation);
+
 }
 
 void test_projection_matrix(void) {
@@ -259,6 +281,39 @@ void test_projection_matrix(void) {
 
     printf("proj v = (%f, %f)\n", vec2_get_x((vec2_t)v), vec2_get_y((vec2_t)v));
 
+    vec4_destroy(v);
+}
+
+void test_camera_matrix(void) {
+    mat4_t camera = mat4_create_camera(1, 1, 0, 0, 0, M_PI);
+    vec4_t vec = vec4_create(2, 2, 0, 1);
+
+    #ifdef PRINTS
+    for (int j = 0; j < 4; j++) {
+        for (int i = 0; i < 4; i++) {
+            float el = mat4_get_element(camera, j, i);
+            printf("%f ", el);
+        }
+        printf("\n");
+    }
+    #endif
+
+    vec4_mul_mat4(camera, vec, vec);
+
+    // First the matrix will translate the vector to 1, 1
+    // and then will rotate it PI rad over the z axis
+    // to make it -1, -1
+    TEST_ASSERT_EQUAL_FLOAT(vec2_get_x((vec2_t) vec), -1);
+    TEST_ASSERT_EQUAL_FLOAT(vec2_get_y((vec2_t) vec), -1);
+    TEST_ASSERT_EQUAL_FLOAT(vec3_get_z((vec3_t) vec), 0);
+
+    #ifdef PRINTS
+    printf("v = (%f, %f, %f, %f)\n", vec2_get_x((vec2_t)vec), vec2_get_y((vec2_t)vec),
+           vec3_get_z((vec3_t) vec), vec4_get_w(vec));
+    #endif
+
+    mat4_destroy(camera);
+    vec4_destroy(vec);
 }
 
 void test_get_element(void) {
@@ -276,6 +331,8 @@ void test_get_element(void) {
         TEST_ASSERT_EQUAL(el, 1);
       }
     }
+    mat4_destroy(m);
+
 }
 
 // not needed when using generate_test_runner.rb
@@ -292,5 +349,6 @@ int main(void) {
     RUN_TEST(test_matrix_multiplication);
     RUN_TEST(test_world_matrix);
     //RUN_TEST(test_projection_matrix);
+    RUN_TEST(test_camera_matrix);
     return UNITY_END();
 }

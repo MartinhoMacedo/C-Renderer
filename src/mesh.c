@@ -80,6 +80,7 @@ void mesh_transform(mesh_t inst, float translate_x, float translate_y,
     // apply transformation to all vertices
     for (int i = 0; i < vertices_size; i++) {
         char tmp_vertice_buffer[vec4_struct_get_size()];
+        char world_buffer[mat4_struct_get_size()];
 
         vec3_t vertice = darray_vec3_t_get(inst->vertices, i);
         vec4_t tmp_vertice = vec4_init(tmp_vertice_buffer,
@@ -88,13 +89,14 @@ void mesh_transform(mesh_t inst, float translate_x, float translate_y,
                                        vec3_get_z(vertice),
                                         1);
 
-        mat4_t world = mat4_create_world(scale_x, scale_y, scale_z, rotate_x,
+        mat4_t world = mat4_init_world(world_buffer, scale_x, scale_y, scale_z, rotate_x,
                                          rotate_y, rotate_z,
                                          translate_x,
                                          translate_y, translate_z);
         vec4_mul_mat4(world, tmp_vertice, tmp_vertice);
 
-        vec3_copy((vec3_t) tmp_vertice, vertice);
+        vec3_copy((vec3_t)tmp_vertice, vertice);
+
 
         /*
         // rotation
@@ -106,6 +108,25 @@ void mesh_transform(mesh_t inst, float translate_x, float translate_y,
         vec3_add(vertice, translate_x, translate_y, translate_z, vertice);
         */
     }
+}
+
+void mesh_to_camera_space(mesh_t inst, mat4_t camera) {
+    int vertices_size = darray_vec3_t_get_occupied(inst->vertices);
+
+    for (int i = 0; i < vertices_size; i++) {
+        char tmp_vertice_buffer[vec4_struct_get_size()];
+
+        vec3_t vertice = darray_vec3_t_get(inst->vertices, i);
+        vec4_t tmp_vertice = vec4_init(tmp_vertice_buffer,
+                                       vec2_get_x((vec2_t) vertice),
+                                       vec2_get_y((vec2_t) vertice),
+                                       vec3_get_z(vertice),
+                                        1);
+        vec4_mul_mat4(camera, tmp_vertice, tmp_vertice);
+
+        vec3_copy((vec3_t)tmp_vertice, vertice);
+    }
+
 }
 
 void mesh_translate(mesh_t inst, float x, float y, float z) {
@@ -149,19 +170,25 @@ void mesh_backface_culling(mesh_t inst, vec3_t camera) {
         vec3_t c = darray_vec3_t_get(inst->vertices, c_idx);
 
         // TODO: Change this to a function in vector "vec3_aligment" maybe
-        vec3_t ab = vec3_create(0,0,0);
-        vec3_t ac = vec3_create(0,0,0);
+        char ab_buffer[vec3_struct_get_size()];
+        char ac_buffer[vec3_struct_get_size()];
+
+        vec3_t ab = (vec3_t) ab_buffer;
+        vec3_t ac = (vec3_t) ac_buffer;
         vec3_vsub(b, a, ab);
         vec3_vsub(c, a, ac);
 
         // normalize vectors
+        char cross_buffer[vec3_struct_get_size()];
+        vec3_t cross_product = (vec3_t) cross_buffer;
 
-        vec3_t cross_product = vec3_create(0,0,0);
         vec3_cross(ab, ac,  cross_product);
         vec3_normal(cross_product, cross_product);
 
         // Get vector from camera to point A
-        vec3_t acamera = vec3_create(0,0,0);
+        char acamera_buffer[vec3_struct_get_size()];
+        vec3_t acamera = (vec3_t) acamera_buffer;
+
         vec3_vsub(camera, a, acamera);
         vec3_normal(acamera, acamera);
 
@@ -170,11 +197,6 @@ void mesh_backface_culling(mesh_t inst, vec3_t camera) {
         if (dot_product <= 0) {
             face_set(face, 0,0,0);
         }
-
-        vec3_destroy(ab);
-        vec3_destroy(ac);
-        vec3_destroy(cross_product);
-        vec3_destroy(acamera);
     }
 }
 

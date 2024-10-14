@@ -161,13 +161,13 @@ void mat4_mul_mat4(mat4_t a, mat4_t b, mat4_t res) {
     *res= res_tmp;
 }
 
-mat4_t mat4_create_world(float scale_x, float scale_y, float scale_z,
-                         float rotation_x, float rotation_y, float rotation_z,
-                     float translation_x, float translation_y, float translation_z) {
+mat4_t mat4_init_world(void *buffer, float scale_x, float scale_y,
+                       float scale_z, float rotation_x, float rotation_y,
+                       float rotation_z, float translation_x,
+                       float translation_y, float translation_z) {
+    mat4_t inst = (mat4_t) buffer;
+
     size_t mat4_struct_size = sizeof(struct mat4_instance_t);
-
-    mat4_t inst = malloc(mat4_struct_size);
-
     char m_scale_buffer[mat4_struct_size];
     char m_rotation_x_buffer[mat4_struct_size];
     char m_rotation_y_buffer[mat4_struct_size];
@@ -184,6 +184,17 @@ mat4_t mat4_create_world(float scale_x, float scale_y, float scale_z,
     mat4_make_world(m_scale,
                     m_rotation_x, m_rotation_y, m_rotation_z,
                     m_translation, inst);
+
+    return inst;
+}
+
+mat4_t mat4_create_world(float scale_x, float scale_y, float scale_z,
+                         float rotation_x, float rotation_y, float rotation_z,
+                     float translation_x, float translation_y, float translation_z) {
+    mat4_t inst = malloc(sizeof (struct mat4_instance_t));
+
+    mat4_init_world(inst, scale_x, scale_y, scale_z, rotation_x, rotation_y,
+                    rotation_z, translation_x, translation_y, translation_z);
 
     return inst;
 }
@@ -209,6 +220,111 @@ mat4_t mat4_create_projection(float fov, float zfar, float znear) {
     return inst;
 }
 
+void mat4_transpose(mat4_t inst, mat4_t res) {
+    struct mat4_instance_t tmp_res = {
+      {
+          {inst->data[0][0], inst->data[1][0], inst->data[2][0], inst->data[3][0]},
+          {inst->data[0][1], inst->data[1][1], inst->data[2][1], inst->data[3][1]},
+          {inst->data[0][2], inst->data[1][2], inst->data[2][2], inst->data[3][2]},
+          {inst->data[0][3], inst->data[1][3], inst->data[2][3], inst->data[3][3]}}};
+
+    *res = tmp_res;
+}
+
+mat4_t mat4_init_camera(void *buffer, float x, float y, float z,
+                        float rotation_x, float rotation_y, float rotation_z) {
+    mat4_t inst = (mat4_t) buffer;
+    inst = mat4_init_identity(inst);
+
+    // We need to create the world to camera matrix (which is the inverse of camera to world)
+
+    // The inverse of a translation matrix is the translation components negated
+    inst->data[0][3] = -x;
+    inst->data[1][3] = -y;
+    inst->data[2][3] = -z;
+
+    struct mat4_instance_t rotation;
+    struct mat4_instance_t m_rotation_x;
+    struct mat4_instance_t m_rotation_y;
+    struct mat4_instance_t m_rotation_z;
+
+    // Flip the z axis
+
+    mat4_init_identity(&rotation);
+    //TODO: The yaw is working on the opposite direction...
+    // If this is set and the projection matrix data[3][2] is 1 instead it seems to work
+    //rotation.data[2][2] = -1;
+    // The other solution is simply setting the yaw to negative in the update function...
+    mat4_init_rotation_x(&m_rotation_x, rotation_x);
+    mat4_init_rotation_y(&m_rotation_y, rotation_y);
+    mat4_init_rotation_z(&m_rotation_z, rotation_z);
+
+    // Since the rotational matrix is orthoghonal, its inverse is the transpose
+    mat4_mul_mat4(&m_rotation_x, &rotation, &rotation);
+    mat4_mul_mat4(&m_rotation_y, &rotation, &rotation);
+    mat4_mul_mat4(&m_rotation_z, &rotation, &rotation);
+
+
+
+    mat4_transpose(&rotation, &rotation);
+
+    // The inverse of a multiplication of matrixes is the same as the multiplication of the inverses
+    mat4_mul_mat4(&rotation, inst, inst);
+
+    return inst;
+}
+
+mat4_t mat4_create_camera(float x, float y, float z, float rotation_x,
+                          float rotation_y, float rotation_z) {
+    mat4_t inst = malloc(sizeof(struct mat4_instance_t));
+
+    mat4_init_camera(inst, x, y, z, rotation_x, rotation_y, rotation_z);
+
+    return inst;
+}
+
+// For first person camera
+void mat4_update_fp_camera(mat4_t inst, float longitudinal, float lateral,
+                        float vertical, float pitch, float yaw, float roll) {
+
+      struct mat4_instance_t transformation_buffer;
+    mat4_t transformation = mat4_init_identity(&transformation_buffer);
+
+    transformation->data[0][3] = -longitudinal;
+    transformation->data[1][3] = -lateral;
+    transformation->data[2][3] = -vertical;
+
+    struct mat4_instance_t rotation;
+    struct mat4_instance_t m_pitch;
+    struct mat4_instance_t m_yaw;
+    struct mat4_instance_t m_roll;
+
+    mat4_init_identity(&rotation);
+    mat4_init_rotation_x(&m_pitch, pitch);
+    mat4_init_rotation_y(&m_yaw, yaw);
+    mat4_init_rotation_z(&m_roll, roll);
+
+    // Since the rotational matrix is orthoghonal, the inverse is the transpose
+    mat4_mul_mat4(&m_pitch, &rotation, &rotation);
+    mat4_mul_mat4(&m_yaw, &rotation, &rotation);
+    mat4_mul_mat4(&m_roll, &rotation, &rotation);
+    mat4_transpose(&rotation, &rotation);
+
+    // The inverse of a multiplication of matrixes is the same as the multiplication of each inverse
+    //mat4_mul_mat4(inst, &rotation, inst);
+    mat4_mul_mat4(&rotation, transformation, transformation);
+
+    // We should only apply the transformations relative to the camera
+    // after the objects are tramsformed to camera space.
+    // This will
+    // translate and rotate the objects in relation to the previous camera coordinate system
+    // in order to obtain the present camera coordinate system.
+    // TLDR: This transformation matrix functions as a "old camera space to new camera space"
+    // transformation.
+    // TODO: Proove this
+    mat4_mul_mat4(transformation, inst, inst);
+}
+
 void mat4_make_world(mat4_t scale, mat4_t rotation_x, mat4_t rotation_y, mat4_t rotation_z,
                      mat4_t translation, mat4_t res) {
     struct mat4_instance_t res_tmp;
@@ -229,4 +345,8 @@ float mat4_get_element(mat4_t inst, int line, int column) {
 
 size_t mat4_struct_get_size() {
     return sizeof(struct mat4_instance_t);
+}
+
+void mat4_destroy(mat4_t inst) {
+    free(inst);
 }
