@@ -251,10 +251,6 @@ mat4_t mat4_init_camera(void *buffer, float x, float y, float z,
     // Flip the z axis
 
     mat4_init_identity(&rotation);
-    //TODO: The yaw is working on the opposite direction...
-    // If this is set and the projection matrix data[3][2] is 1 instead it seems to work
-    //rotation.data[2][2] = -1;
-    // The other solution is simply setting the yaw to negative in the update function...
     mat4_init_rotation_x(&m_rotation_x, rotation_x);
     mat4_init_rotation_y(&m_rotation_y, rotation_y);
     mat4_init_rotation_z(&m_rotation_z, rotation_z);
@@ -288,31 +284,9 @@ void mat4_update_fp_camera(mat4_t inst, float longitudinal, float lateral,
                         float vertical, float pitch, float yaw, float roll) {
 
       struct mat4_instance_t transformation_buffer;
-    mat4_t transformation = mat4_init_identity(&transformation_buffer);
-
-    transformation->data[0][3] = -longitudinal;
-    transformation->data[1][3] = -lateral;
-    transformation->data[2][3] = -vertical;
-
-    struct mat4_instance_t rotation;
-    struct mat4_instance_t m_pitch;
-    struct mat4_instance_t m_yaw;
-    struct mat4_instance_t m_roll;
-
-    mat4_init_identity(&rotation);
-    mat4_init_rotation_x(&m_pitch, pitch);
-    mat4_init_rotation_y(&m_yaw, yaw);
-    mat4_init_rotation_z(&m_roll, roll);
-
-    // Since the rotational matrix is orthoghonal, the inverse is the transpose
-    mat4_mul_mat4(&m_pitch, &rotation, &rotation);
-    mat4_mul_mat4(&m_yaw, &rotation, &rotation);
-    mat4_mul_mat4(&m_roll, &rotation, &rotation);
-    mat4_transpose(&rotation, &rotation);
-
-    // The inverse of a multiplication of matrixes is the same as the multiplication of each inverse
-    //mat4_mul_mat4(inst, &rotation, inst);
-    mat4_mul_mat4(&rotation, transformation, transformation);
+      mat4_t transformation = mat4_init_camera(
+          &transformation_buffer, longitudinal, lateral, vertical, pitch,
+          yaw, roll);
 
     // We should only apply the transformations relative to the camera
     // after the objects are tramsformed to camera space.
