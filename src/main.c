@@ -52,12 +52,19 @@ void process_input(void) {
                 set_render_mode(2);
             if (event.key.keysym.sym == SDLK_3)
                 set_render_mode(3);
-            if (event.key.keysym.sym == SDLK_w)
+            if (event.key.keysym.sym == SDLK_LSHIFT) {
                 // Negative goes forward because the camera z axis is aligned with the worlds
                 // instead of being in the opposite direciton (as it is perceived)
-                camera_z -= 0.1;
+               camera_z -= 0.1;
+            }
+            if (event.key.keysym.sym == SDLK_LCTRL) {
+               camera_z += 0.1;
+            }
+            if (event.key.keysym.sym == SDLK_w)
+                camera_y += 0.1;
             if (event.key.keysym.sym == SDLK_s)
-                camera_z += 0.1;
+                //camera_z += 0.1;
+                camera_y -= 0.1;
             if (event.key.keysym.sym == SDLK_a)
                 camera_x -= 0.1;
             if (event.key.keysym.sym == SDLK_d)

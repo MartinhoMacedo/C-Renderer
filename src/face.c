@@ -7,6 +7,11 @@ struct face_instance_t {
     int a;
     int b;
     int c;
+    /*
+    tex2_t a_uv;
+    tex2_t b_uv;
+    tex2_t c_uv;
+    */
 };
 
 face_t face_create(int a, int b, int c) {

@@ -14,6 +14,7 @@ void mesh_load_file(mesh_t mesh, char* filename);
 struct mesh_instance_t {
     darray_vec3_t vertices;
     darray_face_t faces;
+    //int32_t *texture;
 };
 
 mesh_t mesh_create(char* filename) {

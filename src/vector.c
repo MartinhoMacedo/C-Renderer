@@ -73,7 +73,7 @@ vec4_t vec4_init(void* buffer, float x, float y, float z, float w) {
 }
 
 // TODO: To be replaced by a projection matrix multiplication
-void vec3_project(vec3_t inst, float fov, float zfar, float znear, vec2_t res) {
+void vec3_project(vec3_t inst, float fov, float zfar, float znear, vec3_t res) {
     // P'x = FOV * (Px/Pz) * -A, (where A is distance from our eyes to the screen: we assume 1)
     // P'y = FOV * (Py/Pz) * -A, (where A is distance from our eyes to the screen: we assume 1)
     // -A = 1
@@ -90,7 +90,7 @@ void vec3_project(vec3_t inst, float fov, float zfar, float znear, vec2_t res) {
 
     vec4_homogeneous_to_cartesian(&vec4, (vec3_t) &vec4);
 
-    *res = (struct vec2_instance_t){.x = vec4.x, .y = vec4.y};
+    *res = (struct vec3_instance_t){.x = vec4.x, .y = vec4.y, .z = vec4.z};
 }
 
 void vec2_set(vec2_t inst, float x, float y) {

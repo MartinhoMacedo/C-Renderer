@@ -27,7 +27,7 @@ size_t vec2_struct_get_size();
 size_t vec3_struct_get_size();
 size_t vec4_struct_get_size();
 
-void vec3_project(vec3_t inst, float fov, float zfar, float znear, vec2_t res);
+void vec3_project(vec3_t inst, float fov, float zfar, float znear, vec3_t res);
 
 float vec2_dot(vec2_t a, vec2_t b);
 float vec3_dot(vec3_t a, vec3_t b);
