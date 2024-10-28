@@ -1,5 +1,7 @@
 #include "face.h"
 #include <stdlib.h>
+#include "triangle.h"
+#include "vector.h"
 
 darray_definition(face_t);
 
@@ -20,6 +22,11 @@ face_t face_create(int a, int b, int c) {
     inst->b = b;
     inst->c = c;
     return inst;
+}
+
+void face_clip(face_t inst, darray_vec3_t vertices[], int *triangles_count) {
+
+
 }
 
 void face_set(face_t inst, int a, int b, int c) {

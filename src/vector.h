@@ -44,6 +44,7 @@ void vec2_add(vec2_t a, float b_x, float b_y, vec2_t res);
 void vec3_add(vec3_t a, float b_x, float b_y, float b_z, vec3_t res);
 void vec2_vsub(vec2_t a, vec2_t b, vec2_t res);
 void vec3_vsub(vec3_t a, vec3_t b, vec3_t res);
+void vec3_mul(vec3_t a, float factor, vec3_t res);
 void vec2_scale(vec2_t inst, float factor_x, float factor_y, vec2_t res);
 void vec3_scale(vec3_t inst, float factor_x, float factor_y, float factor_z, vec3_t res);
 

@@ -171,6 +171,12 @@ void vec3_vsub(vec3_t a, vec3_t b, vec3_t res) {
     res->z = a->z - b->z;
 }
 
+void vec3_mul(vec3_t a, float factor, vec3_t res) {
+    res->x = a->x * factor;
+    res->y = a->y * factor;
+    res->z = a->z * factor;
+}
+
 void vec2_scale(vec2_t inst, float factor_x, float factor_y, vec2_t res) {
     struct vec2_instance_t tmp_res = {.x = inst->x * factor_x,
                                       .y = inst->y * factor_y};

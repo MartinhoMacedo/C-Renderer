@@ -1,11 +1,13 @@
 #include <SDL2/SDL.h>
 #include "SDL2/SDL_render.h"
 #include "SDL2/SDL_video.h"
+#include "clipping.h"
 #include "display.h"
 #include "mesh.h"
 #include "face.h"
 #include "vector.h"
 #include "macros.h"
+#include "triangle.h"
 
 static SDL_Window* window = NULL;
 static SDL_Renderer* renderer = NULL;
@@ -18,12 +20,18 @@ static float* zbuffer = NULL;
 static int window_width = 0;
 static int window_height = 0;
 static float aspect_ratio = 0;
+static float aspect_ratio_x = 0;
 
 static mesh_t mesh = NULL;
 
 static bool lines_on = true;
 static bool vertices_on = true;
 static bool fill_on = true;
+
+static float fovy = M_PI/2;
+static float fovx = 0;
+static float znear = 1;
+static float zfar = 50;
 
 void switch_wireframe() {
     lines_on = !lines_on;
@@ -70,6 +78,7 @@ bool init_window(void) {
     window_width = display_mode.w;
     window_height = display_mode.h;
     aspect_ratio = (float)window_height/ window_width;
+    aspect_ratio_x = (float)window_width/window_height;
 
     // Create SDL Window
     window =
@@ -96,6 +105,13 @@ void setup(void) {
     framebuffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
     zbuffer = (float*) malloc(sizeof(float) * window_width * window_height);
 
+    fovx = atan(tan(fovy/2)* aspect_ratio_x) * 2.0;
+
+    // TODO: Pass arguments correctly
+    planes_create(fovy, fovx, znear, zfar);
+    create_intersection_points();
+
+
     if (!framebuffer) {
         printf("Error allocating the framebuffer");
     }
@@ -120,11 +136,16 @@ void zbuffer_clear() {
 
 void zbuffer_add(int x, int y, float z) {
     if (y < 0 || y >= window_height) {
-        printf("Adding to zbuffer error: Invalid y: %d\n",y);
+        // Give some slack for clipping error
+        if(y < -1 || y >= window_height+2){
+            printf("Adding to zbuffer error: Invalid y: %d\n",y);
+        }
         return;
     }
     if (x < 0 || x >= window_width) {
-        printf("Adding to zbuffer error: Invalid x: %d\n",x);
+        if(x < -1 || x >= window_height+2){
+            printf("Adding to zbuffer error: Invalid x: %d\n",x);
+        }
         return;
     }
 
@@ -136,11 +157,15 @@ void zbuffer_add(int x, int y, float z) {
 
 float zbuffer_get(int x, int y) {
     if (y < 0 || y >= window_height) {
-        printf("Getting zbuffer error: Invalid y: %d\n",y);
+        if(y < -1 || y >= window_height+2){
+            printf("Getting zbuffer error: Invalid y: %d\n", y);
+        }
         return -11;
     }
     if (x < 0 || x >= window_width) {
-        printf("Getting zbuffer error: Invalid x: %d\n",x);
+        if(x < -1 || x >= window_height+2){
+            printf("Getting zbuffer error: Invalid x: %d\n",x);
+        }
         return -11;
     }
 
@@ -152,11 +177,15 @@ float zbuffer_get(int x, int y) {
 
 void draw_pixel(int x, int y, uint32_t color) {
     if (y < 0 || y >= window_height) {
-        printf("Draw pixel error: Invalid y: %d\n",y);
+        if(y < -1 || y >= window_height+2){
+            printf("Draw pixel error: Invalid y: %d\n",y);
+        }
         return;
     }
     if (x < 0 || x >= window_width) {
-        printf("Draw pixel error: Invalid x: %d\n",x);
+        if(x < -1 || x >= window_height+2){
+            printf("Draw pixel error: Invalid x: %d\n",x);
+        }
         return;
     }
 
@@ -255,7 +284,6 @@ void draw_triangle_pixel(int x, int y, vec3_t a, vec3_t b, vec3_t c, uint32_t co
         printf("Error calculating bayocentric coords, their sum is: %f \n", a_w+b_w+c_w);
     }
 
-
     if (p_z < zbuffer_get(x, y)) {
         zbuffer_add(x, y,  p_z);
         draw_pixel(x, y, color);
@@ -319,6 +347,7 @@ void draw_triangle_vertices(vec2_t a, vec2_t b, vec2_t c, uint32_t color) {
                 4, 4, color);
     draw_rect(c_x-2, c_y-2,
                 4, 4, color);
+
 }
 
 void draw_triangle_lines(vec2_t a, vec2_t b, vec2_t c, uint32_t color) {
@@ -443,16 +472,16 @@ void draw_filled_triangle(vec3_t a, vec3_t b, vec3_t c, uint32_t color) {
     float b_y = vec2_get_y((vec2_t) b);
     float c_y = vec2_get_y((vec2_t) c);
 
-    draw_triangle_line(a_x, a_y, b_x, b_y, a, b, c, color);
+    /*draw_triangle_line(a_x, a_y, b_x, b_y, a, b, c, color);
     draw_triangle_line(b_x, b_y, c_x, c_y, a, b, c, color);
     draw_triangle_line(c_x, c_y, a_x, a_y, a, b, c, color);
-
+*/
     float M_y = b_y;
     float M_x = ((c_x - a_x) * (b_y - a_y)) / (c_y - a_y) + a_x;
 
     // NOTE: This kind of allocation is expensive
     //vec2_t M = vec2_create(M_x, M_y);
-    char M_buffer[vec2_struct_get_size()];
+    char M_buffer[vec3_struct_get_size()];
 
     vec3_t M = vec3_init(&M_buffer, M_x, M_y, 0);
 
@@ -463,7 +492,6 @@ void draw_filled_triangle(vec3_t a, vec3_t b, vec3_t c, uint32_t color) {
     //vec2_destroy(M);
 }
 
-//TODO: Maybe create a drawer class
 void draw_face(face_t face, darray_vec3_t vertices) {
 
     // Get triangle vertices indexes
@@ -526,11 +554,12 @@ void draw_face(face_t face, darray_vec3_t vertices) {
             draw_filled_triangle(a_proj, b_proj, c_proj, 0xFFFF0000);
         }
     }
+    // TODO: draw triangle lines and triangle vertices of all triangles outside of here after rasterization
     if (lines_on) {
-        draw_triangle_lines((vec2_t) a_proj, (vec2_t) b_proj, (vec2_t) c_proj, 0xFF00FF00);
+        draw_triangle_lines((vec2_t) a_proj, (vec2_t) b_proj, (vec2_t) c_proj, 0xFFFFFFFF);
     }
     if (vertices_on) {
-        draw_triangle_vertices((vec2_t) a_proj, (vec2_t) b_proj, (vec2_t) c_proj, 0xFF00FF00);
+        draw_triangle_vertices((vec2_t) a_proj, (vec2_t) b_proj, (vec2_t) c_proj, 0xFFFFFFFF);
     }
 
     /*vec2_destroy(a_proj);
@@ -545,16 +574,92 @@ void draw_face(face_t face, darray_vec3_t vertices) {
             vec2_get_x(c_proj), vec2_get_y(c_proj));*/
 }
 
+
+
+
+
+//TODO: Maybe create a drawer class
+void draw_triangle(triangle_t triangle) {
+
+    // Get triangles vertices coordinates
+    vec3_t a = triangle.vertices[0];
+    vec3_t b = triangle.vertices[1];
+    vec3_t c = triangle.vertices[2];
+    // Calculate the projected 2 dimensional equivalent vertices
+
+    //NOTE: Allocating and destroying this temp vectors everytime is extremely inefficient.
+    //TODO: Maybe create a pool allocator memory management system.
+    /*vec2_t a_proj = vec2_create(0,0);
+    vec2_t b_proj = vec2_create(0,0);
+    vec2_t c_proj = vec2_create(0,0);
+    */
+    char a_proj_buffer[vec3_struct_get_size()];
+    char b_proj_buffer[vec3_struct_get_size()];
+    char c_proj_buffer[vec3_struct_get_size()];
+
+    vec3_t a_proj = (vec3_t) a_proj_buffer;
+    vec3_t b_proj = (vec3_t) b_proj_buffer;
+    vec3_t c_proj = (vec3_t) c_proj_buffer;
+
+    vec3_project(a, fovy, zfar, znear,a_proj);
+    vec3_project(b, fovy, zfar, znear, b_proj);
+    vec3_project(c, fovy, zfar, znear, c_proj);
+
+    // Convert from NDC to display space
+
+    // Sccale to screen size
+    vec2_scale((vec2_t) a_proj,
+               ((float)window_width / 2) * aspect_ratio,
+               (float)window_height / 2,
+               (vec2_t) a_proj);
+    vec2_scale((vec2_t) b_proj,
+               (float)window_width / 2 * aspect_ratio,
+               (float)window_height / 2,
+               (vec2_t) b_proj);
+    vec2_scale((vec2_t) c_proj, (float)window_width / 2 * aspect_ratio,
+               (float)window_height / 2,
+               (vec2_t) c_proj);
+
+    // Translate to the middle of the screen
+    vec2_add((vec2_t) a_proj, window_width/2, window_height/2, (vec2_t) a_proj);
+    vec2_add((vec2_t) b_proj, window_width/2,window_height/2, (vec2_t) b_proj);
+    vec2_add((vec2_t) c_proj, window_width/2, window_height/2, (vec2_t) c_proj);
+
+    if(fill_on){
+        draw_filled_triangle(a_proj, b_proj, c_proj, 0xFF0000FF);
+    }
+    // TODO: draw triangle lines and triangle vertices of all triangles outside of here after rasterization
+    if (lines_on) {
+        draw_triangle_lines((vec2_t) a_proj, (vec2_t) b_proj, (vec2_t) c_proj, 0xFFFFFFFF);
+    }
+    if (vertices_on) {
+        draw_triangle_vertices((vec2_t) a_proj, (vec2_t) b_proj, (vec2_t) c_proj, 0xFFFFFFFF);
+    }
+
+}
+
 void draw_mesh(mesh_t mesh) {
     darray_face_t faces = mesh_get_faces(mesh);
     darray_vec3_t vertices = mesh_get_vertices(mesh);
     int faces_size = darray_face_t_get_occupied(faces);
 
+
     // Cicle faces
     for (int i = 0; i < faces_size; i++) {
+    //for (int i = 1; i < 2; i++) {
+
         face_t face = darray_face_t_get(faces, i);
-        draw_face(face, vertices);
+        triangle_t triangles[10] = {0};
+        int triangles_count = 0;
+        // TODO: Fix clipping
+        clip_face(face, vertices, triangles, &triangles_count);
+        //draw_face(face, vertices);
+        for (int i = 0; i < triangles_count; i++) {
+            draw_triangle(triangles[i]);
+        }
+        reset_intersection_points();
     }
+
 }
 
 void render_framebuffer(void) {
@@ -603,6 +708,7 @@ void destroy_display(void) {
     SDL_DestroyTexture(framebuffer_texture);
     SDL_DestroyRenderer(renderer);
     free(zbuffer);
+    destroy_intersection_points();
     free(framebuffer);
     SDL_DestroyWindow(window);
 }

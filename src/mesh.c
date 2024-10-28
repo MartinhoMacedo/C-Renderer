@@ -155,7 +155,7 @@ void mesh_rotate(mesh_t inst, float x, float y, float z) {
     }
 }
 /**
- * Sets every face that is not seen by the camera to a not rendarizable value */
+ * Sets every face that is not seen by the camera to a non rendarizable value */
 void mesh_backface_culling(mesh_t inst, vec3_t camera) {
     int faces_size = darray_face_t_get_occupied(inst->faces);
 

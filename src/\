@@ -1,0 +1,12 @@
+#ifndef TRIANGLE_H_
+#define TRIANGLE_H_
+
+typedef struct {
+    vec3_t a;
+    vec3_t b;
+    vec3_t c;
+
+} triangle_t
+
+
+#endif // TRIANGLE_H_
