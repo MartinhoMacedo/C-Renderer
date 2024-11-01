@@ -6,17 +6,20 @@
 #include "string.h"
 
 struct plane_t {
-  vec3_t point;
-  vec3_t normal;
+    vec3_t point;
+    vec3_t normal;
 };
 
 struct polygon_t {
-  vec3_t vertices[MAX_POLY_VERTICES];
-  int vertices_count;
+    vec3_t vertices[MAX_POLY_VERTICES];
+    vec2_t vertices_uv[MAX_POLY_VERTICES];
+    int vertices_count;
 };
+
 
 static struct plane_t planes[N_PLANES];
 static vec3_t intersection_points[10];
+static vec2_t intersection_points_uv[10];
 int intersection_count;
 
 void planes_create(float fovy, float fovx, float z_near, float z_far ) {
@@ -50,12 +53,14 @@ void planes_create(float fovy, float fovx, float z_near, float z_far ) {
 void create_intersection_points() {
     for (int i = 0; i < 10; i++) {
         intersection_points[i] = vec3_create(0, 0, 0);
+        intersection_points_uv[i] = vec2_create(0,0);
     }
 }
 
 void destroy_intersection_points() {
     for (int i = 0; i < 10; i++) {
         vec3_destroy(intersection_points[i]);
+        vec2_destroy(intersection_points_uv[i]);
     }
     intersection_count = 0;
 }
@@ -75,22 +80,28 @@ void clip_triangle(struct polygon_t* polygon, int plane) {
 
     int inside_vertices_count = 0;
     vec3_t inside_vertices[MAX_POLY_VERTICES] = {0};
+    vec2_t inside_vertices_uv[MAX_POLY_VERTICES] = {0};
 
     vec3_t previous_vertex = polygon->vertices[polygon->vertices_count - 1];
-
+    vec2_t previous_vertex_uv = polygon->vertices_uv[polygon->vertices_count -1];
     char current_vector_buffer[vec3_struct_get_size()];
     char previous_vector_buffer[vec3_struct_get_size()];
+
+
+    char current_vector_buffer_uv[vec2_struct_get_size()];
+    char previous_vector_buffer_uv[vec2_struct_get_size()];
 
     vec3_t current_vector = vec3_init(current_vector_buffer, 0, 0, 0);
     vec3_t previous_vector = vec3_init(previous_vector_buffer, 0, 0, 0);
 
-    vec3_vsub(previous_vertex, plane_point, previous_vector);
 
+    vec3_vsub(previous_vertex, plane_point, previous_vector);
     float previous_dot = vec3_dot(previous_vector, plane_normal);
 
     // Check every pair of close vertices
     for (int i = 0; i < polygon_vertices_count; i++) {
         vec3_t current_vertex = polygon->vertices[i];
+        vec2_t current_vertex_uv = polygon->vertices_uv[i];
         vec3_vsub(current_vertex, plane_point, current_vector);
         float current_dot = vec3_dot(current_vector, plane_normal);
 
@@ -99,22 +110,39 @@ void clip_triangle(struct polygon_t* polygon, int plane) {
         if (current_dot * previous_dot < 0) {
             // Find interseciton point
             float t = previous_dot / (previous_dot - current_dot);
-            vec3_t intersection_point = intersection_points[intersection_count++];
+            vec3_t intersection_point = intersection_points[intersection_count];
+            // I = previous_vertex+t*(current_vertex - previous_vertex)
             vec3_vsub(current_vertex, previous_vertex, intersection_point);
             vec3_mul(intersection_point, t, intersection_point);
             vec3_vadd(previous_vertex, intersection_point, intersection_point);
 
-            inside_vertices[inside_vertices_count++] = intersection_point;
+            //TODO: need to get intersection_point_uv
+            inside_vertices[inside_vertices_count] = intersection_point;
+            // Interpolate intersection_point_uv between previouss_vertex and current_vertex
+            // I_uv = previous_vertex_uv + t*(current_vertex_uv - previous_vertex_uv)
+            vec2_t intersection_point_uv = intersection_points_uv[intersection_count];
+            intersection_count++;
+            vec2_vsub(current_vertex_uv, previous_vertex_uv, intersection_point_uv);
+            vec2_mul(intersection_point_uv, t, intersection_point_uv);
+            vec2_vadd(previous_vertex_uv, intersection_point_uv, intersection_point_uv);
+            inside_vertices_uv[inside_vertices_count] = intersection_point_uv;
+            inside_vertices_count++;
+
+
         }
         // Check if the current vertice is inside the clipping space
         if (current_dot >= 0) {
-            inside_vertices[inside_vertices_count++] = current_vertex;
+            inside_vertices[inside_vertices_count] = current_vertex;
+            inside_vertices_uv[inside_vertices_count] = current_vertex_uv;
+            inside_vertices_count ++;
         }
 
         previous_vertex = current_vertex;
+        previous_vertex_uv = current_vertex_uv;
         previous_dot = current_dot;
     }
     memcpy(polygon->vertices, inside_vertices, sizeof(vec3_t)*inside_vertices_count);
+    memcpy(polygon->vertices_uv, inside_vertices_uv, sizeof(vec2_t)*inside_vertices_count);
     polygon->vertices_count = inside_vertices_count;
 }
 
@@ -129,6 +157,19 @@ void polygon_from_triangle(struct polygon_t* polygon, triangle_t triangle) {
     polygon->vertices[7] = NULL;
     polygon->vertices[8] = NULL;
     polygon->vertices[9] = NULL;
+
+    polygon->vertices_uv[0] = triangle.vertices_uv[0];
+    polygon->vertices_uv[1] = triangle.vertices_uv[1];
+    polygon->vertices_uv[2] = triangle.vertices_uv[2];
+    polygon->vertices_uv[3] = NULL;
+    polygon->vertices_uv[4] = NULL;
+    polygon->vertices_uv[5] = NULL;
+    polygon->vertices_uv[6] = NULL;
+    polygon->vertices_uv[7] = NULL;
+    polygon->vertices_uv[8] = NULL;
+    polygon->vertices_uv[9] = NULL;
+
+
     polygon->vertices_count = 3;
 }
 
@@ -138,6 +179,10 @@ void triangles_from_polygon(triangle_t triangles[], struct polygon_t* polygon) {
         triangles[i-2].vertices[0] = polygon->vertices[0];
         triangles[i-2].vertices[1] = polygon->vertices[i-1];
         triangles[i-2].vertices[2] = polygon->vertices[i];
+
+        triangles[i-2].vertices_uv[0] = polygon->vertices_uv[0];
+        triangles[i-2].vertices_uv[1] = polygon->vertices_uv[i-1];
+        triangles[i-2].vertices_uv[2] = polygon->vertices_uv[i];
     }
 }
 
@@ -149,6 +194,7 @@ void clip_face(face_t face, darray_vec3_t vertices, triangle_t triangles[],
     int b_idx = face_get_b(face)-1;
     int c_idx = face_get_c(face)-1;
 
+
     // NOTE: Currently the idx can be less than 0 because backface culling works that way
     if ((a_idx < 0) || (b_idx < 0) || (c_idx < 0)) {
         return;
@@ -159,6 +205,10 @@ void clip_face(face_t face, darray_vec3_t vertices, triangle_t triangles[],
     triangle.vertices[0] = darray_vec3_t_get(vertices, a_idx);
     triangle.vertices[1] = darray_vec3_t_get(vertices, b_idx);
     triangle.vertices[2] = darray_vec3_t_get(vertices, c_idx);
+    //TODO: set uv
+    triangle.vertices_uv[0] = face_get_a_uv(face);
+    triangle.vertices_uv[1] = face_get_b_uv(face);
+    triangle.vertices_uv[2] = face_get_c_uv(face);
 
     struct polygon_t polygon;
     polygon_from_triangle(&polygon, triangle);

@@ -139,7 +139,12 @@ int main(void) {
 
     setup();
 
+    //mesh = mesh_create("./assets/f22.obj");
+    //mesh_load_texture(mesh, "./assets/f22.png");
+
     mesh = mesh_create("./assets/cube.obj");
+    mesh_load_texture(mesh, "./assets/cube.png");
+
     // TODO: change to mesh_create_clone(mesh)
     mesh_transformed = mesh_create_clone(mesh);
 

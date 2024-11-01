@@ -5,6 +5,7 @@
 #include "display.h"
 #include "mesh.h"
 #include "face.h"
+#include "texture.h"
 #include "vector.h"
 #include "macros.h"
 #include "triangle.h"
@@ -216,72 +217,30 @@ void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
 }
 
 void draw_triangle_pixel(int x, int y, vec3_t a, vec3_t b, vec3_t c, uint32_t color) {
-    float a_x = vec2_get_x((vec2_t) a);
-    float b_x = vec2_get_x((vec2_t) b);
-    float c_x = vec2_get_x((vec2_t) c);
-    float a_y = vec2_get_y((vec2_t) a);
-    float b_y = vec2_get_y((vec2_t) b);
-    float c_y = vec2_get_y((vec2_t) c);
     float a_z_inv = 1/vec3_get_z((vec3_t) a);
     float b_z_inv = 1/vec3_get_z((vec3_t) b);
     float c_z_inv = 1/vec3_get_z((vec3_t) c);
 
-    char abc_cross_buffer[vec3_struct_get_size()];
-    char ab_buffer[vec3_struct_get_size()];
-    char ac_buffer[vec3_struct_get_size()];
-    char a_tmp_buffer[vec3_struct_get_size()];
-    char b_tmp_buffer[vec3_struct_get_size()];
-    char c_tmp_buffer[vec3_struct_get_size()];
+    char weights_buffer[vec3_struct_get_size()];
     char p_buffer[vec3_struct_get_size()];
-    char pbc_cross_buffer[vec3_struct_get_size()];
-    char pca_cross_buffer[vec3_struct_get_size()];
-    char pab_cross_buffer[vec3_struct_get_size()];
-    char pa_buffer[vec3_struct_get_size()];
-    char pb_buffer[vec3_struct_get_size()];
-    char pc_buffer[vec3_struct_get_size()];
 
-    vec3_t a_tmp = vec3_init(a_tmp_buffer, a_x, a_y, 0);
-    vec3_t b_tmp = vec3_init(b_tmp_buffer, b_x, b_y, 0);
-    vec3_t c_tmp = vec3_init(c_tmp_buffer, c_x, c_y, 0);
+    vec3_t weights = vec3_init(weights_buffer, 0, 0, 0);
     vec3_t p = vec3_init(p_buffer, x, y, 0);
-    vec3_t abc_cross = vec3_init(abc_cross_buffer, 0, 0, 0);
-    vec3_t pbc_cross = vec3_init(pbc_cross_buffer, 0, 0, 0);
-    vec3_t pca_cross = vec3_init(pca_cross_buffer, 0, 0, 0);
-    vec3_t pab_cross = vec3_init(pab_cross_buffer, 0, 0, 0);
-    vec3_t ab = vec3_init(ab_buffer, 0, 0, 0);
-    vec3_t ac = vec3_init(ac_buffer, 0, 0, 0);
-    vec3_t pa = vec3_init(pa_buffer, 0, 0, 0);
-    vec3_t pb = vec3_init(pb_buffer, 0, 0, 0);
-    vec3_t pc = vec3_init(pc_buffer, 0, 0, 0);
 
-    vec3_vsub(b_tmp, a_tmp, ab);
-    vec3_vsub(c_tmp, a_tmp, ac);
-    vec3_vsub(a_tmp, p, pa);
-    vec3_vsub(b_tmp, p, pb);
-    vec3_vsub(c_tmp, p, pc);
-
-    vec3_cross(ac, ab, abc_cross);
-    float abc_cross_magnitude = vec3_get_z(abc_cross);
-
-    // By calculating the cross product between pc and pb we obtain the area of
-    // a paralelogram which is double the area of the triangle pbc.
-    // By dividing the area of that triangle by the area of the abc triangle
-    // we obtain the "weight" of the vertex "a" which is the bayocentric coefficient for "a"
-    vec3_cross(pc, pb, pbc_cross);
-    float a_w = vec3_get_z(pbc_cross) / abc_cross_magnitude;
-    vec3_cross(pa, pc, pca_cross);
-    float b_w = vec3_get_z(pca_cross) / abc_cross_magnitude;
-    vec3_cross(pb, pa, pab_cross);
-    float c_w = vec3_get_z(pab_cross) / abc_cross_magnitude;
-
+    vec3_barycentric(weights, p, a, b, c);
+    float a_w = vec2_get_x((vec2_t) weights);
+    float b_w = vec2_get_y((vec2_t) weights);
+    float c_w = vec3_get_z( weights);
 
     // Interpolate z and check z buffer
     // NOTE: We need to interpolate 1/p_z instead because there exists a
     // linear function f(a_z, b_z, c_z) = 1/p_z
     float p_z = 1 / (a_w * a_z_inv + b_w * b_z_inv + c_w * c_z_inv);
 
+    // NOTE: a_w + b_w + c_w should be equal to 1 but some slack is given due to
+    // floating point inaccuracies
     if (a_w + b_w + c_w > 1.01) {
-        printf("Error calculating bayocentric coords, their sum is: %f \n", a_w+b_w+c_w);
+        printf("Error calculating barycentric coords, their sum is: %f \n", a_w+b_w+c_w);
     }
 
     if (p_z < zbuffer_get(x, y)) {
@@ -441,6 +400,205 @@ void fill_flat_top_triangle(vec3_t b, vec3_t M, vec3_t c, vec3_t a, uint32_t col
     }
 }
 
+void draw_texel(int x, int y, vec3_t a, vec3_t b, vec3_t c, vec2_t a_uv,
+                vec2_t b_uv, vec2_t c_uv,
+                texture_t* texture) {
+    float a_z_inv = 1/vec3_get_z((vec3_t) a);
+    float b_z_inv = 1/vec3_get_z((vec3_t) b);
+    float c_z_inv = 1/vec3_get_z((vec3_t) c);
+    float a_u = vec2_get_x(a_uv);
+    float b_u = vec2_get_x(b_uv);
+    float c_u = vec2_get_x(c_uv);
+    float a_v = vec2_get_y(a_uv);
+    float b_v = vec2_get_y(b_uv);
+    float c_v = vec2_get_y(c_uv);
+    float texture_width = texture->width;
+    float texture_height = texture->height;
+
+    char weights_buffer[vec3_struct_get_size()];
+    char p_buffer[vec3_struct_get_size()];
+
+    vec3_t weights = vec3_init(weights_buffer, 0, 0, 0);
+    vec3_t p = vec3_init(p_buffer, x, y, 0);
+
+    vec3_barycentric(weights, p, a, b, c);
+    float a_w = vec2_get_x((vec2_t) weights);
+    float b_w = vec2_get_y((vec2_t) weights);
+    float c_w = vec3_get_z( weights);
+
+    // Interpolate z and check z buffer
+    // NOTE: We need to interpolate 1/p_z instead because there exists a
+    // linear function f(a_z, b_z, c_z) = 1/p_z
+    float p_z = 1 / (a_w * a_z_inv + b_w * b_z_inv + c_w * c_z_inv);
+
+    // Interpolate uv
+    float p_u = a_w * a_u + b_w * b_u + c_w * c_u;
+    float p_v = a_w * a_v + b_w * b_v + c_w * c_v;
+
+    int texel_x = p_u * texture_width;
+    //int texel_y =  p_v * texture_height;
+    int texel_y = texture_height - p_v * texture_height - 1;
+
+    // NOTE: a_w + b_w + c_w should be equal to 1 but some slack is given due to
+    // floating point inaccuracies
+    if (a_w + b_w + c_w > 1.01) {
+        printf("Error calculating barycentric coords, their sum is: %f \n", a_w+b_w+c_w);
+    }
+
+    if (p_z < zbuffer_get(x, y)) {
+        zbuffer_add(x, y,  p_z);
+        //int texel = texture_width * texture_height - (texel_y * texture_width + texel_x) - 1;
+        int texel = texel_y * texture_width + texel_x;
+        if (texel > texture_width * texture_height - 1 || texel < 0) {
+            //printf("Error drawing texel: Invalid uv: (%d, %d) \n", texel_x, texel_y);
+            return;
+        }
+        draw_pixel(x, y, texture->texels[texel]);
+        //draw_pixel(x, y, 0xFFFF0000);
+        return;
+    }
+    //printf("a_w: %f, b_w: %f, c_w: %f\n", a_w, b_w, c_w);
+    //printf("p_z: %f, zbuffer: %f\n", p_z, zbuffer_get(x,y));
+}
+
+// Draw triangle abM
+void texture_flat_bottom_triangle(vec3_t a, vec3_t b, vec3_t M, vec3_t c,
+                                  vec2_t a_uv, vec2_t b_uv,
+                                  vec2_t c_uv,texture_t* texture) {
+
+    int a_x = vec2_get_x((vec2_t) a);
+    int a_y = vec2_get_y((vec2_t) a);
+    int b_x = vec2_get_x((vec2_t) b);
+    int b_y = vec2_get_y((vec2_t) b);
+    int M_x = vec2_get_x((vec2_t) M);
+    int M_y = vec2_get_y((vec2_t) M);
+
+    float start_x = a_x;
+    int start_y = a_y;
+    float end_x = a_x;
+    int end_y = M_y;
+
+    // The inverted slopes (run over rise) between point a and b, and between a and c.
+    // NOTE: Division is expensive
+    float slope_start = (float)(b_x - a_x) / -(float)(b_y - a_y);
+    float slope_end = (float)(M_x - a_x) / -(float)(M_y - a_y);
+
+
+
+    for (int y = start_y; y >= end_y; y--) {
+        int aux_start_x = start_x;
+        int aux_end_x = end_x;
+        if (aux_start_x > aux_end_x) {
+            int tmp = aux_start_x;
+            aux_start_x = aux_end_x;
+            aux_end_x = tmp;
+        }
+        for (int x = aux_start_x; x <= aux_end_x; x++) {
+            draw_texel(x, y, a, b, c, a_uv, b_uv, c_uv, texture);
+        }
+        start_x += slope_start;
+        end_x += slope_end;
+    }
+}
+
+// Draw triangle aMc
+void texture_flat_top_triangle(vec3_t b, vec3_t M, vec3_t c, vec3_t a,
+                               vec2_t a_uv,
+                               vec2_t b_uv, vec2_t c_uv, texture_t* texture) {
+    int b_x = vec2_get_x((vec2_t) b);
+    int b_y = vec2_get_y((vec2_t) b);
+    int M_x = vec2_get_x((vec2_t) M);
+    int M_y = vec2_get_y((vec2_t) M);
+    int c_x = vec2_get_x((vec2_t) c);
+    int c_y = vec2_get_y((vec2_t) c);
+
+    float start_x = b_x;
+    int start_y = b_y;
+    float end_x = M_x;
+    int end_y = c_y;
+
+    // The inverted slopes (run over rise) between point a and b, and between a and c.
+    // NOTE: Division is expensive
+    float slope_start = (float)(c_x - b_x) / -(float)(c_y - b_y);
+    float slope_end = (float)(c_x - M_x) / -(float)(c_y - M_y);
+
+    // TODO: Fix subpixel precision
+    for (int y = start_y; y > end_y; y--) {
+        int aux_start_x = start_x;
+        int aux_end_x = end_x;
+        if (aux_start_x > aux_end_x) {
+            int tmp = aux_start_x;
+            aux_start_x = aux_end_x;
+            aux_end_x = tmp;
+        }
+        for (int x = aux_start_x; x < aux_end_x; x++) {
+            draw_texel(x, y, a, b, c, a_uv, b_uv, c_uv, texture);
+        }
+        start_x += slope_start;
+        end_x += slope_end;
+    }
+}
+
+
+void draw_textured_triangle(vec3_t a, vec3_t b, vec3_t c, vec2_t a_uv,
+                            vec2_t b_uv, vec2_t c_uv, texture_t* texture) {
+    // Get sorted vertices so that a_y > b_y > c_y
+    //
+    //
+
+    // Manual bubble sort
+    // TODO: This is simple enough for this but maybe create separate sorting functions
+    if (vec2_get_y((vec2_t) b) > vec2_get_y((vec2_t) a)) {
+        vec3_t tmp = a;
+        a = b;
+        b = tmp;
+
+        vec2_t tmp_uv = a_uv;
+        a_uv = b_uv;
+        b_uv = tmp_uv;
+    }
+    if (vec2_get_y((vec2_t) c) > vec2_get_y((vec2_t) b)) {
+        vec3_t tmp = b;
+        b = c;
+        c = tmp;
+
+        vec2_t tmp_uv = b_uv;
+        b_uv = c_uv;
+        c_uv = tmp_uv;
+    }
+    // 2nd pass
+    if (vec2_get_y((vec2_t) b) > vec2_get_y((vec2_t) a)) {
+        vec3_t tmp = a;
+        a = b;
+        b = tmp;
+
+        vec2_t tmp_uv = a_uv;
+        a_uv = b_uv;
+        b_uv = tmp_uv;
+    }
+
+    float a_x = vec2_get_x((vec2_t) a);
+    float b_x = vec2_get_x((vec2_t) b);
+    float c_x = vec2_get_x((vec2_t) c);
+    float a_y = vec2_get_y((vec2_t) a);
+    float b_y = vec2_get_y((vec2_t) b);
+    float c_y = vec2_get_y((vec2_t) c);
+
+    float M_y = b_y;
+    float M_x = ((c_x - a_x) * (b_y - a_y)) / (c_y - a_y) + a_x;
+
+    // NOTE: This kind of allocation is expensive
+    //vec2_t M = vec2_create(M_x, M_y);
+    char M_buffer[vec3_struct_get_size()];
+
+    vec3_t M = vec3_init(&M_buffer, M_x, M_y, 0);
+
+
+    texture_flat_bottom_triangle(a, b, M, c, a_uv, b_uv, c_uv, texture);
+    texture_flat_top_triangle(b, M, c, a, a_uv, b_uv, c_uv, texture);
+}
+
+
 void draw_filled_triangle(vec3_t a, vec3_t b, vec3_t c, uint32_t color) {
     // Get sorted vertices so that a_y > b_y > c_y
     //
@@ -579,12 +737,13 @@ void draw_face(face_t face, darray_vec3_t vertices) {
 
 
 //TODO: Maybe create a drawer class
-void draw_triangle(triangle_t triangle) {
+void draw_triangle(triangle_t* triangle, texture_t* texture) {
+    static int count = 0;
 
     // Get triangles vertices coordinates
-    vec3_t a = triangle.vertices[0];
-    vec3_t b = triangle.vertices[1];
-    vec3_t c = triangle.vertices[2];
+    vec3_t a = triangle->vertices[0];
+    vec3_t b = triangle->vertices[1];
+    vec3_t c = triangle->vertices[2];
     // Calculate the projected 2 dimensional equivalent vertices
 
     //NOTE: Allocating and destroying this temp vectors everytime is extremely inefficient.
@@ -625,8 +784,21 @@ void draw_triangle(triangle_t triangle) {
     vec2_add((vec2_t) b_proj, window_width/2,window_height/2, (vec2_t) b_proj);
     vec2_add((vec2_t) c_proj, window_width/2, window_height/2, (vec2_t) c_proj);
 
+    // Round to nearest display pixel
+    //vec2_round((vec2_t) a_proj);
+    //vec2_round((vec2_t) b_proj);
+    //vec2_round((vec2_t) c_proj);
+
     if(fill_on){
-        draw_filled_triangle(a_proj, b_proj, c_proj, 0xFF0000FF);
+        if (count % 2 == 0) {
+            //draw_filled_triangle(a_proj, b_proj, c_proj, 0xFF0000FF);
+        }
+        //draw_filled_triangle(a_proj, b_proj, c_proj, 0xFFFF0000);
+        count++;
+
+        draw_textured_triangle(a_proj, b_proj, c_proj, triangle->vertices_uv[0],
+                               triangle->vertices_uv[1], triangle->vertices_uv[2],
+                               texture);
     }
     // TODO: draw triangle lines and triangle vertices of all triangles outside of here after rasterization
     if (lines_on) {
@@ -635,14 +807,14 @@ void draw_triangle(triangle_t triangle) {
     if (vertices_on) {
         draw_triangle_vertices((vec2_t) a_proj, (vec2_t) b_proj, (vec2_t) c_proj, 0xFFFFFFFF);
     }
-
 }
+
 
 void draw_mesh(mesh_t mesh) {
     darray_face_t faces = mesh_get_faces(mesh);
     darray_vec3_t vertices = mesh_get_vertices(mesh);
     int faces_size = darray_face_t_get_occupied(faces);
-
+    texture_t* texture = mesh_get_texture(mesh);
 
     // Cicle faces
     for (int i = 0; i < faces_size; i++) {
@@ -651,11 +823,10 @@ void draw_mesh(mesh_t mesh) {
         face_t face = darray_face_t_get(faces, i);
         triangle_t triangles[10] = {0};
         int triangles_count = 0;
-        // TODO: Fix clipping
         clip_face(face, vertices, triangles, &triangles_count);
         //draw_face(face, vertices);
         for (int i = 0; i < triangles_count; i++) {
-            draw_triangle(triangles[i]);
+            draw_triangle(&triangles[i], texture);
         }
         reset_intersection_points();
     }

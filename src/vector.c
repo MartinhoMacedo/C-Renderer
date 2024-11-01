@@ -6,6 +6,7 @@
 #include <math.h>
 
 darray_definition(vec3_t);
+darray_definition(vec2_t);
 
 struct vec2_instance_t {
     float x;
@@ -137,6 +138,72 @@ void vec3_normal(vec3_t inst, vec3_t res) {
     res->z = inst->z / magnitude;
 }
 
+// Find barycentric coordinates for p where a b and c are the vertices of the triangle
+//
+void vec3_barycentric(vec3_t res, vec3_t p, vec3_t a, vec3_t b, vec3_t c) {
+    float a_x = vec2_get_x((vec2_t) a);
+    float b_x = vec2_get_x((vec2_t) b);
+    float c_x = vec2_get_x((vec2_t) c);
+    float a_y = vec2_get_y((vec2_t) a);
+    float b_y = vec2_get_y((vec2_t) b);
+    float c_y = vec2_get_y((vec2_t) c);
+
+    char abc_cross_buffer[vec3_struct_get_size()];
+    char ab_buffer[vec3_struct_get_size()];
+    char ac_buffer[vec3_struct_get_size()];
+    char a_tmp_buffer[vec3_struct_get_size()];
+    char b_tmp_buffer[vec3_struct_get_size()];
+    char c_tmp_buffer[vec3_struct_get_size()];
+    char pbc_cross_buffer[vec3_struct_get_size()];
+    char pca_cross_buffer[vec3_struct_get_size()];
+    char pab_cross_buffer[vec3_struct_get_size()];
+    char pa_buffer[vec3_struct_get_size()];
+    char pb_buffer[vec3_struct_get_size()];
+    char pc_buffer[vec3_struct_get_size()];
+    vec3_t a_tmp = vec3_init(a_tmp_buffer, a_x, a_y, 0);
+    vec3_t b_tmp = vec3_init(b_tmp_buffer, b_x, b_y, 0);
+    vec3_t c_tmp = vec3_init(c_tmp_buffer, c_x, c_y, 0);
+    vec3_t abc_cross = vec3_init(abc_cross_buffer, 0, 0, 0);
+    vec3_t pbc_cross = vec3_init(pbc_cross_buffer, 0, 0, 0);
+    vec3_t pca_cross = vec3_init(pca_cross_buffer, 0, 0, 0);
+    vec3_t pab_cross = vec3_init(pab_cross_buffer, 0, 0, 0);
+    vec3_t ab = vec3_init(ab_buffer, 0, 0, 0);
+    vec3_t ac = vec3_init(ac_buffer, 0, 0, 0);
+    vec3_t pa = vec3_init(pa_buffer, 0, 0, 0);
+    vec3_t pb = vec3_init(pb_buffer, 0, 0, 0);
+    vec3_t pc = vec3_init(pc_buffer, 0, 0, 0);
+
+    vec3_vsub(b_tmp, a_tmp, ab);
+    vec3_vsub(c_tmp, a_tmp, ac);
+    vec3_vsub(a_tmp, p, pa);
+    vec3_vsub(b_tmp, p, pb);
+    vec3_vsub(c_tmp, p, pc);
+
+    vec3_cross(ac, ab, abc_cross);
+    float abc_cross_magnitude = vec3_get_z(abc_cross);
+
+    // By calculating the cross product between pc and pb we obtain the area of
+    // a paralelogram which is double the area of the triangle pbc.
+    // By dividing the area of that triangle by the area of the abc triangle
+    // we obtain the "weight" of the vertex "a" which is the barycentric coefficient for "a"
+    vec3_cross(pc, pb, pbc_cross);
+    float a_w = vec3_get_z(pbc_cross) / abc_cross_magnitude;
+    vec3_cross(pa, pc, pca_cross);
+    float b_w = vec3_get_z(pca_cross) / abc_cross_magnitude;
+    vec3_cross(pb, pa, pab_cross);
+    float c_w = vec3_get_z(pab_cross) / abc_cross_magnitude;
+
+    if (a_w < 0 || b_w < 0 || c_w < 0 || a_w > 1 || b_w > 1 || c_w > 1) {
+        //TODO: Debug here
+        //printf("Barycentric error: a_w=%f; b_w=%f; c_w=%f\n", a_w, b_w, c_w);
+        //TODO: Need to fix subpixel precision
+    }
+
+    res->x = a_w;
+    res->y = b_w;
+    res->z = c_w;
+}
+
 // TODO: This will have problems if references a = b, fix it!
 void vec2_vadd(vec2_t a, vec2_t b, vec2_t res) {
     res->x = a->x + b->x;
@@ -171,6 +238,11 @@ void vec3_vsub(vec3_t a, vec3_t b, vec3_t res) {
     res->z = a->z - b->z;
 }
 
+void vec2_mul(vec2_t a, float factor, vec2_t res) {
+    res->x = a->x * factor;
+    res->y = a->y * factor;
+}
+
 void vec3_mul(vec3_t a, float factor, vec3_t res) {
     res->x = a->x * factor;
     res->y = a->y * factor;
@@ -190,6 +262,11 @@ void vec3_scale(vec3_t inst, float factor_x, float factor_y, float factor_z, vec
       .z = inst->z * factor_z};
 
     *res = tmp_res;
+}
+
+void vec2_round(vec2_t inst) {
+    inst->x = roundf(inst->x);
+    inst->y = roundf(inst->y);
 }
 
 // res = mat * vec

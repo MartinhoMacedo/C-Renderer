@@ -12,6 +12,9 @@ mesh_t mesh_create(char* filename);
 mesh_t mesh_create_clone(mesh_t orig);
 void mesh_destroy(mesh_t inst);
 
+
+void mesh_load_texture(mesh_t inst, char *filename);
+
 void mesh_copy(mesh_t orig, mesh_t dest);
 
 void mesh_transform(mesh_t inst, float translate_x, float translate_y,
@@ -26,6 +29,7 @@ void mesh_rotate(mesh_t inst, float x, float y, float z);
 
 void mesh_backface_culling(mesh_t inst, vec3_t camera);
 
+texture_t* mesh_get_texture(mesh_t inst);
 darray_vec3_t mesh_get_vertices(mesh_t inst);
 darray_face_t mesh_get_faces(mesh_t inst);
 

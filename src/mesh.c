@@ -1,21 +1,63 @@
 #include "mesh.h"
 #include "darray.h"
 #include "macros.h"
+#include "upng.h"
 #include "vector.h"
 #include "face.h"
 #include "matrix.h"
+#include "texture.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-
 
 void mesh_load_file(mesh_t mesh, char* filename);
 
 struct mesh_instance_t {
     darray_vec3_t vertices;
+    darray_vec2_t vertices_uv;
     darray_face_t faces;
-    //int32_t *texture;
+    texture_t texture;
 };
+
+void abgr_to_argb(uint32_t* colors, int array_size) {
+    uint32_t mask0 = 0xFF000000;
+    uint32_t mask1 = 0x00FF0000;
+    uint32_t mask2 = 0x0000FF00;
+    uint32_t mask3 = 0x000000FF;
+    for (int i = 0; i < array_size; i++) {
+        uint32_t color = colors[i];
+        uint32_t blue = color & mask1;
+        uint32_t green = color & mask2;
+        uint32_t red = color & mask3;
+
+        blue = blue >> 16;
+        red = red << 16;
+
+        color = mask0 | red | green | blue;
+        colors[i] = color;
+    }
+}
+
+void mesh_load_texture(mesh_t inst, char *filename) {
+    upng_t* texture_png = upng_new_from_file(filename);
+    if (texture_png == NULL) {
+        printf("Error loading texture: Texture is NULL\n");
+        return;
+    }
+    upng_decode(texture_png);
+    int error;
+    if ( (error = upng_get_error(texture_png)) != UPNG_EOK) {
+        printf("Error loading texture: Code %d", error);
+        return;
+    }
+
+    inst->texture.width = upng_get_width(texture_png);
+    inst->texture.height = upng_get_height(texture_png);
+    uint32_t* texels = (uint32_t *)upng_get_buffer(texture_png);
+    abgr_to_argb(texels,inst->texture.width * inst->texture.height);
+    inst->texture.texels = texels;
+
+}
 
 mesh_t mesh_create(char* filename) {
     mesh_t inst = malloc(sizeof(struct mesh_instance_t));
@@ -29,11 +71,23 @@ mesh_t mesh_create_clone(mesh_t orig) {
     mesh_t inst = malloc(sizeof(struct mesh_instance_t));
 
     int vertices_size = darray_vec3_t_get_occupied(orig->vertices);
+    int vertices_uv_size = darray_vec2_t_get_occupied(orig->vertices_uv);
     int faces_size = darray_face_t_get_occupied(orig->faces);
 
     inst->vertices = darray_vec3_t_create();
     inst->faces = darray_face_t_create();
+    inst->texture = orig->texture;
+    inst->vertices_uv = darray_vec2_t_create();
 
+
+    // TODO: Temporary
+
+    for(int i = 0; i < vertices_uv_size; i++){
+        vec2_t orig_vertex_uv = darray_vec2_t_get(orig->vertices_uv, i);
+        vec2_t dest_vertex_uv = vec2_create(0, 0);
+        vec2_copy(orig_vertex_uv, dest_vertex_uv);
+        darray_vec2_t_push(inst->vertices_uv, dest_vertex_uv);
+    }
     for (int i = 0; i < vertices_size; i++) {
         vec3_t orig_vertex = darray_vec3_t_get(orig->vertices, i);
         vec3_t dest_vertex = vec3_create(0, 0, 0);
@@ -43,7 +97,7 @@ mesh_t mesh_create_clone(mesh_t orig) {
 
     for (int i = 0; i < faces_size; i++) {
        face_t orig_face = darray_face_t_get(orig->faces, i);
-       face_t dest_face = face_create(0, 0, 0);
+       face_t dest_face = face_create(0, 0, 0, NULL, NULL, NULL);
        face_copy(orig_face, dest_face);
        darray_face_t_push(inst->faces, dest_face);
     }
@@ -56,7 +110,19 @@ mesh_t mesh_create_clone(mesh_t orig) {
  * The destination should have allocated arrays of the same size as the origin. */
 void mesh_copy(mesh_t orig, mesh_t dest) {
     int vertices_size = darray_vec3_t_get_occupied(orig->vertices);
+    int vertices_uv_size = darray_vec2_t_get_occupied(orig->vertices_uv);
     int faces_size = darray_face_t_get_occupied(orig->faces);
+
+    dest->texture = orig->texture;
+
+    // NOTE: Temporary
+
+    for (int i = 0; i < vertices_uv_size; i++) {
+        vec2_t orig_vertex_uv = darray_vec2_t_get(orig->vertices_uv, i);
+        vec2_t dest_vertex_uv = darray_vec2_t_get(dest->vertices_uv, i);
+        vec2_copy(orig_vertex_uv, dest_vertex_uv);
+    }
+
 
     for (int i = 0; i < vertices_size; i++) {
         vec3_t orig_vertex = darray_vec3_t_get(orig->vertices, i);
@@ -196,7 +262,7 @@ void mesh_backface_culling(mesh_t inst, vec3_t camera) {
         float dot_product =  vec3_dot(cross_product, acamera);
 
         if (dot_product <= 0) {
-            face_set(face, 0,0,0);
+            face_set(face, 0,0,0,NULL, NULL, NULL);
         }
     }
 }
@@ -208,6 +274,11 @@ darray_vec3_t mesh_get_vertices(mesh_t inst) {
 darray_face_t mesh_get_faces(mesh_t inst) {
     return inst->faces;
 }
+
+texture_t* mesh_get_texture(mesh_t inst) {
+    return &inst->texture;
+}
+
 // Reads obj file and saves to a mesh struct instance
 void mesh_load_file(mesh_t mesh, char* filename) {
     FILE* fp = fopen(filename, "r");
@@ -222,9 +293,11 @@ void mesh_load_file(mesh_t mesh, char* filename) {
     }
 
     int i = 0;
+    //darray_vec2_t vertices_texture = darray_vec2_t_create();
+    mesh->vertices_uv = darray_vec2_t_create();
     while (fgets(line, 100, fp)) {
         // TODO: Load values into mesh
-        if ((line[0] == 'v') && (line[1] = ' ')) {
+        if ((line[0] == 'v') && (line[1] == ' ')) {
             float x;
             float y;
             float z;
@@ -233,20 +306,36 @@ void mesh_load_file(mesh_t mesh, char* filename) {
             continue;
         }
 
+        if ((line[0] == 'v') && (line[1] == 't')) {
+            float u;
+            float v;
+            sscanf(line, "vt %f %f", &u, &v);
+            darray_vec2_t_push(mesh->vertices_uv, vec2_create(u, v));
+            continue;
+        }
+
         if (line[0] == 'f') {
             int a;
             int b;
             int c;
+            int a_texture;
+            int b_texture;
+            int c_texture;
 
-            sscanf(line, "f %d/%*d/%*d %d/%*d/%*d %d/%*d/%*d", &a,
-                   &b, &c);
-            darray_face_t_push(mesh->faces, face_create(a, b, c));
+            sscanf(line, "f %d/%d/%*d %d/%d/%*d %d/%d/%*d", &a, &a_texture,
+                   &b, &b_texture, &c, &c_texture);
+            darray_face_t_push(
+                mesh->faces,
+                face_create(a, b, c,
+                            darray_vec2_t_get(mesh->vertices_uv, a_texture - 1),
+                            darray_vec2_t_get(mesh->vertices_uv, b_texture - 1),
+                            darray_vec2_t_get(mesh->vertices_uv, c_texture - 1)));
 
+            /*
             face_t face = darray_face_t_get(mesh->faces, i);
             a = face_get_a(face);
             b = face_get_b(face);
             c = face_get_c(face);
-            /*
             printf("face: %d %d %d\n", a, b, c);
             int count = darray_face_t_get_occupied(mesh->faces);
             int limit = darray_face_t_get_capacity(mesh->faces);
@@ -258,25 +347,33 @@ void mesh_load_file(mesh_t mesh, char* filename) {
         }
     }
     fclose(fp);
+    //darray_vec2_t_destroy(mesh->vertices_uv);
 }
 
 void mesh_destroy(mesh_t inst) {
-    // Destroy faces dynamic array and its elements
-    for (int i = 0; i < sizeof(inst->faces)/sizeof(face_t); i++) {
-        face_destroy(darray_face_t_get(inst->faces, i));
+
+    for (int i = 0; i < darray_vec2_t_get_occupied(inst->vertices_uv) ; i++) {
+        vec2_destroy(darray_vec2_t_get(inst->vertices_uv, i));
     }
-    /**
-    * NOTE: What if we free an "object" that is used somewhere else outside of this array?
-    This is why oop languages have garbage collectors...
-    */
+    darray_vec2_t_destroy(inst->vertices_uv);
+
+    for (int i = 0; i < darray_face_t_get_occupied(inst->faces) ; i++) {
+        face_t face = darray_face_t_get(inst->faces, i);
+
+        face_destroy(face);
+    }
+
     darray_face_t_destroy(inst->faces);
 
     // Destroy vertices ""
-    for (int i = 0; i < sizeof(inst->vertices) / sizeof(vec3_t); i++) {
+    for (int i = 0; i < darray_vec3_t_get_occupied(inst->vertices) ; i++) {
         vec3_destroy(darray_vec3_t_get(inst->vertices, i));
     }
     darray_vec3_t_destroy(inst->vertices);
 
+    //TODO: Free texture
+
     // Lastly free the mesh structure itself
     free(inst);
+
 }
